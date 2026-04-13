@@ -15,7 +15,7 @@ from sklearn.gaussian_process.kernels import (RBF,DotProduct, WhiteKernel,
 from ase.io import read
 from ase.io.trajectory import Trajectory,TrajectoryWriter
 from ase.calculators.singlepoint import SinglePointCalculator
-from irff.dft.siesta import siesta_opt #, write_siesta_in
+from irff.dft.siesta import siesta_opt, write_siesta_in
 from irff.md.gulp import opt,get_reax_energy,write_gulp_in
 from irff.AtomDance import AtomDance
 
@@ -300,6 +300,23 @@ def zmat(geo='POSCAR',i=-1):
     ad.write_zmat(zmat,uspex=True)
     ad.close()
 
+def fdf(gen='poscar.gen',xcf='gga',i=-1):
+    A = read(gen,index=i)
+    print('\n-  writing siesta input ...')
+    if xcf=='gga':
+       write_siesta_in(A,coord='cart', md=False, opt='CG',
+                    VariableCell='true', 
+                    xcf='GGA',xca='PBE',basistype='split' )
+    elif xcf=='vdw':
+       write_siesta_in(A,coord='cart', md=False, opt='CG',
+                    VariableCell='true', xcf='VDW', xca='DRSLL',
+                    basistype='split') # DZP
+       # siesta_opt(A,ncpu=ncpu,us=us,VariableCell=vc,tstep=step,
+       #            xcf='GGA',xca='PBE',basistype='split')
+       #            xcf='VDW',xca='DRSLL',basistype='split')
+    else:
+       print('Not supported yet!')
+
 if __name__=='__main__': 
    ''' A tool kit for USPEX crystal structure post process
        use commond like: 
@@ -319,6 +336,6 @@ if __name__=='__main__':
           ./uspexkit.py zmat --geo=structure.vasp --i=0
    '''
    parser = argparse.ArgumentParser()
-   argh.add_commands(parser, [calc,traj,zmat])
+   argh.add_commands(parser, [calc,traj,zmat,fdf])
    argh.dispatch(parser)
    
