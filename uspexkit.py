@@ -322,16 +322,14 @@ def sample(ind='',t=None):
         ./uspexkit.py sample --i='2332 2338 2360'
         ./uspexkit.py sample --i='2332 2338 2360' --t=Individuals.traj
     '''
-    cdir    = getcwd()
-    cdir_   = '/'.join(cdir.split('/')[:-1])
-    density = d
+    # cdir    = getcwd()
     atoms   = None
     traj    = TrajectoryWriter('samples.traj',mode='w')
 
     if ind:
        ids = [int(i) for i in ind.split()]
        if t is not None:
-          images = Trajectory(traj)
+          images = Trajectory(t)
           for i in ids:
               traj.write(atoms=images[i])
        else:
