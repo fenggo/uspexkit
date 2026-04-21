@@ -128,7 +128,7 @@ def load_gaussian_process(X,y,y_eng):
         print(gpr_energy.log_marginal_likelihood(),file=fl)
     return gpr_energy,gpr_density    
     
-def calc(t='Individuals.traj',den=1.88,ids=None,step=50,ncpu=8,dat='data',tolerance=0.01):
+def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.01):
     ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
     images = Trajectory(t)
     if not ids:
