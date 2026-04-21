@@ -127,7 +127,7 @@ def load_gaussian_process(X,y,y_eng):
         print(gpr_energy.kernel_,file=fl)
         print(gpr_energy.log_marginal_likelihood(),file=fl)
     return gpr_energy,gpr_density    
-    
+
 def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.01):
     ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
     images = Trajectory(t)
@@ -317,6 +317,31 @@ def fdf(gen='poscar.gen',xcf='gga',i=-1):
     else:
        print('Not supported yet!')
 
+def sample(ind='',t=None):
+    ''' ./uspexkit.py sample --d=1.83
+        ./uspexkit.py sample --i='2332 2338 2360'
+        ./uspexkit.py sample --i='2332 2338 2360' --t=Individuals.traj
+    '''
+    cdir    = getcwd()
+    cdir_   = '/'.join(cdir.split('/')[:-1])
+    density = d
+    atoms   = None
+    traj    = TrajectoryWriter('samples.traj',mode='w')
+
+    if ind:
+       ids = [int(i) for i in ind.split()]
+       if t is not None:
+          images = Trajectory(traj)
+          for i in ids:
+              traj.write(atoms=images[i])
+       else:
+          for i in ids:
+              atoms = read('{:d}/POSCAR.{:d}_opt'.format(i,i))
+              atoms.calc = SinglePointCalculator(atoms,energy=0.0)
+              traj.write(atoms=atoms) 
+   
+    traj.close()
+
 if __name__=='__main__': 
    ''' A tool kit for USPEX crystal structure post process
        use commond like: 
@@ -336,6 +361,6 @@ if __name__=='__main__':
           ./uspexkit.py zmat --geo=structure.vasp --i=0
    '''
    parser = argparse.ArgumentParser()
-   argh.add_commands(parser, [calc,traj,zmat,fdf])
+   argh.add_commands(parser, [calc,traj,zmat,fdf,sample])
    argh.dispatch(parser)
    
