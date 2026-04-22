@@ -92,7 +92,7 @@ def search_structure(feature,D,tolerance=0.01):
        res_ = res[imin]
     else:
        res  = np.sum(np.square(D - feature))
-       ind  = [[0]]
+       ind  = [[0]] if res<tolerance else [[]]
        imin = 0
        res_ = res
     return ind,imin,res_
