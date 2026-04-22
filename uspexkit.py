@@ -84,15 +84,16 @@ def get_gulp_energy(atoms,ncpu=8):
     return atoms,e,density
 
 def search_structure(feature,D,tolerance=0.01):
-    try:
+    # print(D.ndim)
+    if D.ndim==2:
        res  = np.sum(np.square(D - feature),axis=1)
-    except:
-       res  = np.sum(np.square(D - feature))
-    ind  = np.where(res<tolerance)
-    imin = np.argmin(res)
-    try:
+       ind  = np.where(res<tolerance)
+       imin = np.argmin(res)
        res_ = res[imin]
-    except:
+    else:
+       res  = np.sum(np.square(D - feature))
+       ind  = [[0]]
+       imin = 0
        res_ = res
     return ind,imin,res_
 
@@ -193,8 +194,12 @@ def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',toler
         if len(ind[0])>0:
            atoms.write('POSCAR.{:d}'.format(s))
            struc[imin].write('POSCAR.{:d}_opt'.format(s))
-           energy  = D_[imin,0]
-           density = D_[imin,7]
+           if D.ndim==2:
+              energy  = D_[imin,0]
+              density = D_[imin,7]
+           else:
+              energy  = D_[0]
+              density = D_[7]
            print('{:5d} mt {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:7.4f} {:7.4f}'.format(s,
                  energy,feature[1],feature[2],feature[3],feature[4],feature[5],feature[6],density,res_))  
            traj  = TrajectoryWriter('id_{:d}.traj'.format(s),mode='w')
