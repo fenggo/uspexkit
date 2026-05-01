@@ -231,10 +231,10 @@ def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',toler
             
            chdir(data_dir)
            with open('feature_mlp.csv','a') as fd:
-                print(i+1,',',feature[0],',',feature[1],',',feature[2],',',feature[3],',',
+                print(0,',',feature[0],',',feature[1],',',feature[2],',',feature[3],',',
                         feature[4],',',feature[5],',',feature[6],',',feature[7],file=fd) 
            with open('feature.csv','a') as fd:
-                print(i+1,',',energy,',',feature[1],',',feature[2],',',
+                print(0,',',energy,',',feature[1],',',feature[2],',',
                 feature[3],',',feature[4],',',feature[5],',',feature[6],',',density,file=fd)  
         
            atoms.calc = SinglePointCalculator(atoms,energy=energy)
