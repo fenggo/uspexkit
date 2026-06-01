@@ -129,6 +129,71 @@ def load_gaussian_process(X,y,y_eng):
         print(gpr_energy.log_marginal_likelihood(),file=fl)
     return gpr_energy,gpr_density    
 
+def pred(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.001):
+    ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
+    images = Trajectory(t)
+    if not ids:
+       ids = []
+       res = read_individuals()
+       for i,e,d,f in res:
+           if d>den and f<0.0:
+              ids.append(i)
+    else:
+        ids = [int(i) for i in ids.split()]
+
+    root_dir   = getcwd()
+    if not exists('density_predict.log'):
+       with open('density_predict.log','w') as fd:
+            print('# Crystal_id Density Energy',file=fd)
+         
+    for s in ids:
+        dir_list = root_dir.split('/')
+        rootdir  = '/'.join(dir_list[:-1])
+        data_dir = '{:s}/{:s}'.format(rootdir,dat)
+        atoms = images[s-1]
+        if exists(str(s)):
+           continue  
+        else:
+           mkdir(str(s))
+
+        chdir(data_dir)
+        # print('change to data dir:',data_dir)
+        atoms_mlp,e,density = get_gulp_energy(atoms,ncpu=ncpu)
+        feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
+        
+        assert exists('structures.traj'),'Error, datafile not found in data directory!'
+        data = np.loadtxt('feature_mlp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
+        data_= np.loadtxt('feature.csv',delimiter=',',skiprows=1)          ## get crystal feature data
+        struc= Trajectory('structures.traj')
+        
+        D    = data[:,1:]         # 去掉索引
+        D_   = data_[:,1:]
+        ind,imin,res_ = search_structure(feature,D,tolerance=tolerance)
+ 
+        X_raw  = data[:,1:]
+        y      = data_[:,8]
+        y_eng  = data_[:,1]
+        scaler = preprocessing.StandardScaler().fit(X_raw)
+        X      = scaler.transform(X_raw)
+        gpr_energy,gpr_density = load_gaussian_process(X,y,y_eng)
+        
+        if len(ind[0])>0:
+           energy  = D_[imin,0]
+           density = D_[imin,7]
+           print('{:5d} mt {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:7.4f} {:7.4f}'.format(s,
+                 energy,feature[1],feature[2],feature[3],feature[4],feature[5],feature[6],density,res_))  
+           traj  = TrajectoryWriter('id_{:d}.traj'.format(s),mode='w')
+           traj.write(atoms=struc[imin])
+           traj.close()
+        else:
+           X_ = scaler.transform(np.expand_dims(feature,axis=0))
+           energy, std_den_pred  = gpr_density.predict(X_, return_std=True)
+           density, std_eng_pred = gpr_energy.predict(X_, return_std=True)
+
+        chdir(root_dir)
+        with open('density_predict.log','a') as fd:
+             print('{:5d} {:10.6f} {:10.8f} {:9.6f} {:9.6f}'.format(s,density,energy,std_den_pred,std_eng_pred),file=fd)
+
 def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.01):
     ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
     images = Trajectory(t)
@@ -173,6 +238,7 @@ def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',toler
               D    = data[1:]         # 去掉索引
               D_   = data_[1:]
            ind,imin,res_ = search_structure(feature,D,tolerance=tolerance)
+
         else:
            ind = [[]]  
            with open('feature_mlp.csv','w') as fd:
@@ -206,18 +272,18 @@ def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',toler
            traj.write(atoms=struc[imin])
            traj.close()
         else:
-           system('cp {:s}/Specific/*.psf ./'.format(rootdir))
+           subprocess.call('cp {:s}/Specific/*.psf ./'.format(rootdir),shell=True)
            img = siesta_opt(atoms,ncpu=ncpu,us='F',VariableCell='true',tstep=step,
                          xcf='GGA',xca='PBE',basistype='split')
                          # xcf='VDW',xca='DRSLL',basistype='split')
-           system('mv siesta.out siesta-{:d}.out'.format(s))
-           system('mv siesta.MDE siesta-{:d}.MDE'.format(s))
-           system('mv siesta.MD_CAR siesta-{:d}.MD_CAR'.format(s))
-           system('mv siesta.traj id_{:d}.traj'.format(s))
-           system('rm siesta.* ')
-           system('rm *.xml ')
-           system('rm INPUT_TMP.* ')
-           system('rm fdf-* ')
+           subprocess.call('mv siesta.out siesta-{:d}.out'.format(s),shell=True)
+           subprocess.call('mv siesta.MDE siesta-{:d}.MDE'.format(s),shell=True)
+           subprocess.call('mv siesta.MD_CAR siesta-{:d}.MD_CAR'.format(s),shell=True)
+           subprocess.call('mv siesta.traj id_{:d}.traj'.format(s),shell=True)
+           subprocess.call('rm siesta.* ',shell=True)
+           subprocess.call('rm *.xml ',shell=True)
+           subprocess.call('rm INPUT_TMP.* ',shell=True)
+           subprocess.call('rm fdf-* ',shell=True)
            img[0].write('POSCAR.{:d}'.format(s))
            atoms = img[-1]
            atoms.write('POSCAR.{:d}_opt'.format(s))
@@ -364,6 +430,6 @@ if __name__=='__main__':
           ./uspexkit.py zmat --geo=structure.vasp --i=0
    '''
    parser = argparse.ArgumentParser()
-   argh.add_commands(parser, [calc,traj,zmat,fdf,sample])
+   argh.add_commands(parser, [calc,pred,traj,zmat,fdf,sample])
    argh.dispatch(parser)
    
