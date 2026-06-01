@@ -185,10 +185,16 @@ def pred(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',toler
            traj  = TrajectoryWriter('id_{:d}.traj'.format(s),mode='w')
            traj.write(atoms=struc[imin])
            traj.close()
+           std_den_pred = 0.0
+           std_eng_pred = 0.0
         else:
            X_ = scaler.transform(np.expand_dims(feature,axis=0))
            energy, std_den_pred  = gpr_density.predict(X_, return_std=True)
            density, std_eng_pred = gpr_energy.predict(X_, return_std=True)
+           energy  = energy[0]
+           density = density[0]
+           std_den_pred = std_den_pred[0]
+           std_eng_pred = std_eng_pred[0]
 
         chdir(root_dir)
         with open('density_predict.log','a') as fd:
