@@ -219,9 +219,12 @@ def pred(t='Individuals.traj',g=None,f=1,den=1.88,ids=None,step=300,ncpu=8,dat='
         density_mlp = mlp.predict(X_)
         density_rf = density_rf[0]
         density_mlp = density_mlp[0]
-        print('{:5d} gp {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f}  {:7.4f} {:7.4f}'.format(s,
-              density_rf,density_mlp,feature[3],feature[4],feature[5],feature[6],density,std_den_pred))  
-            
+        if f==1:
+           print('{:5d} rf: {:9.4f} mlp: {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} gp: {:7.4f} uncert: {:7.4f}'.format(s,
+                 density_rf,density_mlp,feature[3],feature[4],feature[5],feature[6],density,std_den_pred))  
+        else:
+           print('{:5d} rf: {:9.4f} mlp: {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} gp: {:7.4f} uncert: {:7.4f}'.format(s,
+                 density_rf,density_mlp,feature[4],feature[5],feature[6],feature[7],density,std_den_pred))  
         chdir(root_dir)
         with open('density_predict.log','a') as fd:
              print('{:5d} {:9.6f} {:9.6f} {:9.6f} {:10.6f} {:9.6f} {:9.6f}'.format(s,
