@@ -153,7 +153,15 @@ def load_rfr(X,y):
     return rfr
 
 def pred(t='Individuals.traj',g=None,f=1,den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.001):
-    ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
+    ''' calculate the density of the crystal with DFT and High-Throughtput Screening 
+        use with commmand like:
+          ./uspexkit.py pred --i='253' --n=24 --dat=data11_44 --f=1
+        where:
+          i:   index
+          den: density bigger than this while be computed
+          n:   number of cpu
+          dat: datafile directiory
+    '''
     images = Trajectory(t)
     if not ids:
        ids = []
