@@ -152,7 +152,7 @@ def load_rfr(X,y):
     # print(feature_importances)
     return rfr
 
-def pred(t='Individuals.traj',g=None,den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.001):
+def pred(t='Individuals.traj',g=None,f=1,den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.001):
     ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
     images = Trajectory(t)
     if not ids:
@@ -177,8 +177,10 @@ def pred(t='Individuals.traj',g=None,den=1.88,ids=None,step=300,ncpu=8,dat='data
 
         chdir(data_dir)
         atoms_mlp,e,density = get_gulp_energy(atoms,ncpu=ncpu)
-        feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
-        # feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
+        if f==1:
+           feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
+        else:
+           feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
         
         assert exists('structures.traj'),'Error, datafile not found in data directory!'
         data = np.loadtxt('feature_mlp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
