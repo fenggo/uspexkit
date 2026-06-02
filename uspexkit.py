@@ -12,6 +12,8 @@ from sklearn.gaussian_process.kernels import (RBF,DotProduct, WhiteKernel,
                                               ConstantKernel as C,RationalQuadratic,
                                               Matern,
                                               ExpSineSquared)
+from sklearn.neural_network import MLPRegressor
+from sklearn.ensemble import RandomForestRegressor
 from ase.io import read
 from ase.io.trajectory import Trajectory,TrajectoryWriter
 from ase.calculators.singlepoint import SinglePointCalculator
@@ -33,7 +35,7 @@ class Stack():
     def close(self):
         self.entry = None
 
-def read_individuals():
+def read_individuals(g=None):
     enthalpy  = []
     gene      = {}
     with open('Individuals') as f:
@@ -67,7 +69,7 @@ def read_individuals():
          st.close()
 
     k = gene.keys()
-    k_ = max(k)
+    k_ = max(k) if g is None else g
     return gene[k_]
 
 def get_gulp_energy(atoms,ncpu=8):
@@ -121,7 +123,7 @@ def load_gaussian_process(X,y,y_eng):
     else:
        with open('gpr_energy.pkl', 'rb') as f:
             gpr_energy = pickle.load(f)
-           
+
     with open('gpcsp.log','w') as fl:
         print(gpr_density.kernel_,file=fl)
         print(gpr_density.log_marginal_likelihood(),file=fl)
@@ -129,12 +131,33 @@ def load_gaussian_process(X,y,y_eng):
         print(gpr_energy.log_marginal_likelihood(),file=fl)
     return gpr_energy,gpr_density    
 
-def pred(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.001):
+def load_mlp(X,y):
+    ''' 多层感知机机器学习模型 '''
+    mlp = MLPRegressor((16, 8), max_iter=20000)
+    mlp.fit(X,y)
+    # score = mlp.score(train_inputs, train_labels)
+    return mlp  
+
+def load_rfr(X,y):
+    ''' 随机森林机器学习模型 '''
+    rfr   = RandomForestRegressor(random_state=37, n_estimators=300,
+                                  min_weight_fraction_leaf=0.0,
+                                  oob_score=True)
+    # train
+    rfr.fit(X, y)
+    # score = rfr.score(X, y)
+    # print(' * train set score: ',score)
+    feature_importances = rfr.feature_importances_
+    # print(' * feature importances: \n')
+    # print(feature_importances)
+    return rfr
+
+def pred(t='Individuals.traj',g=None,den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.001):
     ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
     images = Trajectory(t)
     if not ids:
        ids = []
-       res = read_individuals()
+       res = read_individuals(g)
        for i,e,d,f in res:
            if d>den and f<0.0:
               ids.append(i)
@@ -144,22 +167,18 @@ def pred(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',toler
     root_dir   = getcwd()
     if not exists('density_predict.log'):
        with open('density_predict.log','w') as fd:
-            print('# Crystal_id Density Energy',file=fd)
+            print('# Crystal_id Density_mlp Density_rf Density_gp Energy std_den std_eng',file=fd)
          
     for s in ids:
         dir_list = root_dir.split('/')
         rootdir  = '/'.join(dir_list[:-1])
         data_dir = '{:s}/{:s}'.format(rootdir,dat)
         atoms = images[s-1]
-        if exists(str(s)):
-           continue  
-        else:
-           mkdir(str(s))
 
         chdir(data_dir)
-        # print('change to data dir:',data_dir)
         atoms_mlp,e,density = get_gulp_energy(atoms,ncpu=ncpu)
         feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
+        # feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
         
         assert exists('structures.traj'),'Error, datafile not found in data directory!'
         data = np.loadtxt('feature_mlp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
@@ -171,34 +190,32 @@ def pred(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',toler
         ind,imin,res_ = search_structure(feature,D,tolerance=tolerance)
  
         X_raw  = data[:,1:]
-        y      = data_[:,8]
+        y      = data_[:,-1] #8
         y_eng  = data_[:,1]
         scaler = preprocessing.StandardScaler().fit(X_raw)
         X      = scaler.transform(X_raw)
-        gpr_energy,gpr_density = load_gaussian_process(X,y,y_eng)
+        gpr_energy,gpr_density = load_gaussian_process(X,y,y_eng)  ## 
+        rfr = load_rfr(X,y)
+        mlp = load_mlp(X,y)
         
-        if len(ind[0])>0:
-           energy  = D_[imin,0]
-           density = D_[imin,7]
-           print('{:5d} mt {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:7.4f} {:7.4f}'.format(s,
-                 energy,feature[1],feature[2],feature[3],feature[4],feature[5],feature[6],density,res_))  
-           traj  = TrajectoryWriter('id_{:d}.traj'.format(s),mode='w')
-           traj.write(atoms=struc[imin])
-           traj.close()
-           std_den_pred = 0.0
-           std_eng_pred = 0.0
-        else:
-           X_ = scaler.transform(np.expand_dims(feature,axis=0))
-           energy, std_den_pred  = gpr_density.predict(X_, return_std=True)
-           density, std_eng_pred = gpr_energy.predict(X_, return_std=True)
-           energy  = energy[0]
-           density = density[0]
-           std_den_pred = std_den_pred[0]
-           std_eng_pred = std_eng_pred[0]
-
+        X_ = scaler.transform(np.expand_dims(feature,axis=0))
+        density, std_den_pred  = gpr_density.predict(X_, return_std=True)
+        energy, std_eng_pred = gpr_energy.predict(X_, return_std=True)
+        energy  = energy[0]
+        density = density[0]
+        std_den_pred = std_den_pred[0]
+        std_eng_pred = std_eng_pred[0]
+        density_rf = rfr.predict(X_)
+        density_mlp = mlp.predict(X_)
+        density_rf = density_rf[0]
+        density_mlp = density_mlp[0]
+        print('{:5d} gp {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f}  {:7.4f} {:7.4f}'.format(s,
+              density_rf,density_mlp,feature[3],feature[4],feature[5],feature[6],density,std_den_pred))  
+            
         chdir(root_dir)
         with open('density_predict.log','a') as fd:
-             print('{:5d} {:10.6f} {:10.8f} {:9.6f} {:9.6f}'.format(s,density,energy,std_den_pred,std_eng_pred),file=fd)
+             print('{:5d} {:9.6f} {:9.6f} {:9.6f} {:10.6f} {:9.6f} {:9.6f}'.format(s,
+                    density_mlp,density_rf,density,energy,std_den_pred,std_eng_pred),file=fd)
 
 def calc(t='Individuals.traj',den=1.88,ids=None,step=300,ncpu=8,dat='data',tolerance=0.01):
     ''' calculate the density of the crystal with DFT and High-Throughtput Screening '''
