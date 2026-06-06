@@ -100,29 +100,33 @@ def search_structure(feature,D,tolerance=0.01):
     return ind,imin,res_
 
 def load_gaussian_process(X,y,y_eng):
-    if not exists('gpr_density.pkl'):
-       kernel = ( 0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50))**2 +   # 线性/多项式趋势 捕捉线性趋势及二阶耦合 (x_i * x_j)
-                  0.35**2 * Matern(length_scale=[0.0526, 0.0525, 0.0493, 0.01, 0.0439, 0.163, 0.1, 0.1], nu=1.5) +       # 局部耦合
-                  WhiteKernel(noise_level=0.1)    )                                      # 噪声补偿
-       gpr_density = GaussianProcessRegressor(kernel=kernel,n_restarts_optimizer=10,normalize_y=True)
-       gpr_density.fit(X,y)
-       with open('gpr_density.pkl', 'wb') as f:
-            pickle.dump(gpr_density, f)
+    if X.shape[1]==8:
+       length_scale = [0.0526, 0.0525, 0.0493, 0.01, 0.0439, 0.163, 0.1, 0.1]
     else:
-       with open('gpr_density.pkl', 'rb') as f:
-            gpr_density = pickle.load(f)
+       length_scale = [0.0526, 0.0493, 0.01, 0.0439, 0.163, 0.1, 0.1]
+    # if not exists('gpr_density.pkl'):
+    kernel = ( 0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50)) +   # 线性/多项式趋势 捕捉线性趋势及二阶耦合 (x_i * x_j)
+              0.35**2 * Matern(length_scale=length_scale, nu=2.5) +       # 局部耦合
+              WhiteKernel(noise_level=0.1,noise_level_bounds=(1e-8, 1e-1))    )                                      # 噪声补偿
+    gpr_density = GaussianProcessRegressor(kernel=kernel,n_restarts_optimizer=10,normalize_y=True)
+    gpr_density.fit(X,y)
+    with open('gpr_density.pkl', 'wb') as f:
+        pickle.dump(gpr_density, f)
+    # else:
+    #    with open('gpr_density.pkl', 'rb') as f:
+    #         gpr_density = pickle.load(f)
            
-    if not exists('gpr_energy.pkl'):
-       kernel = ( 0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50))**2 +   # 线性/多项式趋势 捕捉线性趋势及二阶耦合 (x_i * x_j)
-                  0.35**2 * Matern(length_scale=[0.0526, 0.0525, 0.0493, 0.01, 0.0439, 0.163, 0.1, 0.1], nu=1.5) +       # 局部耦合
-                  WhiteKernel(noise_level=0.1)    )                                      # 噪声补偿
-       gpr_energy = GaussianProcessRegressor(kernel=kernel,n_restarts_optimizer=10,normalize_y=True)
-       gpr_energy.fit(X,y_eng)
-       with open('gpr_energy.pkl', 'wb') as f:
-            pickle.dump(gpr_energy, f)
-    else:
-       with open('gpr_energy.pkl', 'rb') as f:
-            gpr_energy = pickle.load(f)
+    # if not exists('gpr_energy.pkl'):
+    kernel = ( 0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50)) +   # 线性/多项式趋势 捕捉线性趋势及二阶耦合 (x_i * x_j)
+              0.35**2 * Matern(length_scale=length_scale, nu=2.5) +       # 局部耦合
+              WhiteKernel(noise_level=0.1,noise_level_bounds=(1e-8, 1e-1))    )                                      # 噪声补偿
+    gpr_energy = GaussianProcessRegressor(kernel=kernel,n_restarts_optimizer=10,normalize_y=True)
+    gpr_energy.fit(X,y_eng)
+    with open('gpr_energy.pkl', 'wb') as f:
+        pickle.dump(gpr_energy, f)
+    # else:
+    #    with open('gpr_energy.pkl', 'rb') as f:
+    #         gpr_energy = pickle.load(f)
 
     with open('gpcsp.log','w') as fl:
         print(gpr_density.kernel_,file=fl)
@@ -221,10 +225,10 @@ def pred(t='Individuals.traj',g=None,f=1,den=1.88,ids=None,step=300,ncpu=8,dat='
         density_mlp = density_mlp[0]
         if f==1:
            print('{:5d} rf: {:9.4f} mlp: {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} gp: {:7.4f} uncert: {:7.4f}'.format(s,
-                 density_rf,density_mlp,feature[3],feature[4],feature[5],feature[6],density,std_den_pred))  
+                 density_rf,density_mlp,feature[4],feature[5],feature[6],feature[7],density,std_den_pred))  
         else:
            print('{:5d} rf: {:9.4f} mlp: {:9.4f} {:9.4f} {:9.4f} {:9.4f} {:9.4f} gp: {:7.4f} uncert: {:7.4f}'.format(s,
-                 density_rf,density_mlp,feature[4],feature[5],feature[6],feature[7],density,std_den_pred))  
+                 density_rf,density_mlp,feature[3],feature[4],feature[5],feature[6],density,std_den_pred))
         chdir(root_dir)
         with open('density_predict.log','a') as fd:
              print('{:5d} {:9.6f} {:9.6f} {:9.6f} {:10.6f} {:9.6f} {:9.6f}'.format(s,
