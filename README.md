@@ -17,7 +17,10 @@ uspexkit traj
 uspexkit calc --n=24   # 进行高通量筛选及DFT软件计算
 ```
 3、zmat 将结构坐标文件转成USPEX内坐标MOL_*文件。
+```
 uspexkit zmat  --g=POSCAR
-
+```
 4、查看所有命令
+```
 uspexkit --help or uspexkit -h
+```
