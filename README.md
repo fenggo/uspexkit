@@ -1,4 +1,14 @@
-* uspexkit.py脚本使用说明 1、traj
+* uspexkit包使用说明 
+
+* 安装
+
+下载解压后运行命令：
+```
+pip install .
+```
+
+
+1、traj
 ```
 uspexkit traj
 ```
