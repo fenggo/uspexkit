@@ -22,5 +22,7 @@ uspexkit zmat  --g=POSCAR
 ```
 4、查看所有命令
 ```
-uspexkit --help or uspexkit -h
+uspexkit --help 
+or
+ uspexkit -h
 ```
