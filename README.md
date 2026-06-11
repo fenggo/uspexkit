@@ -1,6 +1,7 @@
 * uspexkit包使用说明 
 
 * 安装
+git clone https://gitee.com/fenggo/uspexkit.git
 
 下载解压后运行命令：
 ```
