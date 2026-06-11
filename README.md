@@ -1,12 +1,9 @@
 * uspexkit包使用说明 
 
-* 安装
+0、下载安装
 ```
 git clone https://gitee.com/fenggo/uspexkit.git
-```
-
-下载解压后运行命令：
-```
+cd uspexkit
 pip install .
 ```
 
