@@ -1,5 +1,5 @@
 """Utility classes and functions for USPEX data processing."""
-
+import re
 
 class Stack:
     def __init__(self, entry=None):
@@ -61,3 +61,74 @@ def search_structure(feature, D, tolerance=0.01):
         imin = 0
         res_ = res
     return ind, imin, res_
+
+
+def generate_hbond_lib(elements, src='reaxff_nn.lib', dst=None,
+                       hbond_energy=-10.0):
+    '''从 src 复制生成 dst，只保留 elements 指定的氢键项，能量替换为 hbond_energy。
+    
+    elements: 如 'H core C core O core'，自动推导 dst 文件名后缀。
+    若 elements 在原始氢键段中不存在，则以 'H core C core O core' 为模板替换元素名。
+    '''
+    if dst is None:
+        elems = [p.lower() for p in elements.split()
+                 if len(p) == 1 and p.isalpha()]
+        suffix = 'ch' + elems[2]  # C-H-X 命名约定
+        dst = f'reaxff_nn_{suffix}.lib'
+    if exists(dst):
+        return dst
+
+    template = 'H core C core O core'
+
+    with open(src, 'r') as f:
+        lines = f.readlines()
+
+    # 检查 elements 是否在氢键段中存在
+    in_hbond = False
+    found = False
+    for line in lines:
+        if line.startswith('reaxff3_hbond'):
+            in_hbond = True
+            continue
+        if in_hbond and (line.startswith('#') or line.startswith('reaxff4')):
+            break
+        if in_hbond and line.startswith(elements):
+            found = True
+            break
+
+    in_hbond = False
+    hbond_done = False
+    with open(dst, 'w') as f:
+        for line in lines:
+            if line.startswith('reaxff3_hbond'):
+                in_hbond = True
+                f.write(line)
+                continue
+            if in_hbond and not hbond_done:
+                if found:
+                    if line.startswith(elements):
+                        # 替换该行第二个数值（能量项），保留原始空格
+                        pat = r'^(' + re.escape(elements) + r'\s+[\d.-]+\s+)[\d.-]+'
+                        line = re.sub(pat, r'\g<1>' + str(hbond_energy), line)
+                        f.write(line)
+                        f.write('\n')
+                        hbond_done = True
+                else:
+                    if line.startswith(template):
+                        # 用模板行替换元素名 + 能量
+                        pat = r'^(' + re.escape(template) + r'\s+[\d.-]+\s+)[\d.-]+'
+                        line = re.sub(pat, r'\g<1>' + str(hbond_energy), line)
+                        line = line.replace(template, elements, 1)
+                        f.write(line)
+                        f.write('\n')
+                        hbond_done = True
+                continue
+            if in_hbond and hbond_done:
+                if line.startswith('#') or line.startswith('reaxff4'):
+                    in_hbond = False
+                    f.write(line)
+                continue
+            if not in_hbond:
+                f.write(line)
+    return dst
+

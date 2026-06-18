@@ -18,9 +18,68 @@ from sklearn.ensemble import RandomForestRegressor
 from ase.io import read
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.calculators.singlepoint import SinglePointCalculator
+from uspexkit.utils import read_individuals, search_structure,generate_hbond_lib
+from irff.md.gulp import opt,get_reax_energy,write_gulp_in
 
-from uspexkit.utils import read_individuals, search_structure
 
+def get_feature(atoms,n=1,lib='reaxff_nn'):
+    write_gulp_in(atoms,runword='gradient nosymmetry conv qite verb',lib=lib)
+    if n==1:
+       subprocess.call('gulp<inp-gulp>out',shell=True)
+    else:
+       subprocess.call('mpirun -n {:d} gulp<inp-gulp>out'.format(n),shell=True)
+    e = get_reax_energy(fo='out')
+    return e
+
+
+def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
+    lib = generate_hbond_lib(elements)
+    e = get_feature(atoms,n=n,lib=lib)
+    return e
+
+
+def calcdata(traj='structures.traj',n=8,step=1000):
+    images      = Trajectory(traj)
+    traj_       = TrajectoryWriter('structures_mlp.traj',mode='w')
+
+    with open('feature_mlp.csv','w') as fd:
+        print(', etot, ebond, eang, etor, evdw, ehb_cho,ehb_chn,ehb_chc, ecoul, density',file=fd)
+    with open('feature.csv','w') as fd_:
+        print(', etot, ebond, eang, etor, evdw, ehb_cho, ehb_chn,ehb_chc, ecoul, density',file=fd_)
+
+    for i,atoms in enumerate(images):
+        masses = np.sum(atoms.get_masses())
+        volume = atoms.get_volume()
+        density_ = masses/volume/0.602214129
+        energy = atoms.get_potential_energy()
+        
+        atoms = opt(atoms=atoms,step=step,l=1,t=0.000001,n=n, lib='reaxff_nn')
+        e     = get_feature(atoms,n=n,lib='reaxff_nn')
+        e_cho = get_hbond_feature(atoms,n=n,elements='H core C core O core')
+        e_chn = get_hbond_feature(atoms,n=n,elements='H core C core N core')
+        e_chc = get_hbond_feature(atoms,n=n,elements='H core C core C core')
+
+        # atoms = read('gulp.cif')
+        atoms.calc = SinglePointCalculator(atoms,energy=e[0])
+        traj_.write(atoms=atoms)
+        # e,ebond,elp,eover,eunder,eang,epen,tconj,etor,fconj,evdw,ehb,ecl,esl
+        
+        volume = atoms.get_volume()
+        density = masses/volume/0.602214129
+    #  print(e)
+        print('ID {:4d}: etol {:8.4f} ebond: {:8.4f} eang: {:8.4f} etor: {:8.4f} evdw: {:8.4f} '
+            'ehb: {:8.4f}  {:8.4f} {:8.4f} {:8.4f} ' 
+            'ecoul: {:8.4f} density: {:9.6}'.format(i,e[0],e[1],e[5],e[8],e[10],
+                                        e[11],e_cho[11],e_chn[11],e_chc[11],
+                                        e[12],density))
+        with open('feature_mlp.csv','a') as fd:
+            print(i,',',e[0],',',e[1],',',e[5],',',e[8],',',e[10],',',e_cho[11],',',e_chn[11],',',e_chc[11],',',
+                e[12],',',density,file=fd) 
+        with open('feature.csv','a') as fd_:
+            print(i,',',energy,',',e[1],',',e[5],',',e[8],',',e[10],',',e_cho[11],',',e_chn[11],',',e_chc[11],',',
+                e[12],',',density_,file=fd_) 
+            
+    traj_.close()
 
 # ──────────────────────────────────────────────
 #  GULP energy helper
@@ -325,7 +384,7 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
 
 
 # ──────────────────────────────────────────────
-#  traj — POSCAR 转 trajectory
+#  traj — POSCAR to trajectory
 # ──────────────────────────────────────────────
 
 def traj(fposcar="gatheredPOSCARS"):
@@ -431,3 +490,6 @@ def sample(ind="", t=None):
                 traj_w.write(atoms=atoms)
 
     traj_w.close()
+
+
+
