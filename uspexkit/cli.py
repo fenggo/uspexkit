@@ -12,6 +12,7 @@ COMMANDS = {
     "zmat": (zmat, "Convert structure to USPEX Z-matrix format"),
     "fdf":  (fdf,  "Generate SIESTA input files"),
     "sample": (sample, "Sample structures by index to trajectory"),
+    "calcdata": (calcdata, "calculate the feature vector of crystal structures"),
 }
 
 
@@ -64,6 +65,12 @@ def main():
     p_sample.add_argument("--ind", default="", help="Indices (space-separated)")
     p_sample.add_argument("--t", default=None, help="Trajectory file")
 
+    # ── calcdata ──
+    p_calcdata = sub.add_parser("calcdata", help=COMMANDS["calcdata"][1])
+    p_calcdata.add_argument("--n", default=1, help="number cpu tobe used")
+    p_calcdata.add_argument("--t", default='structures.traj', help="Trajectory file")
+    p_calcdata.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -87,3 +94,8 @@ def main():
         cmd_func(gen=args.gen, xcf=args.xcf, i=args.i)
     elif args.command == "sample":
         cmd_func(ind=args.ind, t=args.t)
+    elif args.command == "calcdata":
+        cmd_func(traj=args.t, step=args.step,n=args.n)
+
+
+        
