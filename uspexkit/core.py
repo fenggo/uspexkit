@@ -47,9 +47,7 @@ def get_gulp_energy(atoms, ncpu=8):
 
 def load_gaussian_process(X, y, y_eng):
     if X.shape[1] == 8:
-        length_scale = [0.0526, 0.0525, 0.0493, 0.01, 0.0439, 0.163, 0.1, 0.1]
-    else:
-        length_scale = [0.0526, 0.0493, 0.01, 0.0439, 0.163, 0.1, 0.1]
+    length_scale = [0.1 for i in range(X.shape[1])]
 
     if not exists("gpr_density.pkl"):
         kernel = (
@@ -144,6 +142,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
 
         chdir(data_dir)
         atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
+        e_cho = get_hbond_energy(atoms,ncpu=ncpu)
         if f == 1:
             feature = np.array([e[0], e[1], e[5], e[8], e[10], e[11], e[12], density])
         else:
