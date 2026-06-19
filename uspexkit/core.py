@@ -34,8 +34,23 @@ from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
     High-Throughput Evolutionary Crystal Structure Prediction Method
 '''
 
+def get_feature(atoms,n=1,lib='reaxff_nn'):
+    write_gulp_in(atoms,runword='gradient nosymmetry conv qite verb',lib=lib)
+    if n==1:
+       subprocess.call('gulp<inp-gulp>out',shell=True)
+    else:
+       subprocess.call('mpirun -n {:d} gulp<inp-gulp>out'.format(n),shell=True)
+    e = get_reax_energy(fo='out')
+    return e
 
-def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data'):
+
+def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
+    lib = generate_hbond_lib(elements)
+    e = get_feature(atoms,n=n,lib=lib)
+    return e
+
+
+def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data',resf='results1'):
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
     run_gulp(n=ncpu,inp='inp-grad')
     e = get_reax_energy(fo='output')
@@ -77,10 +92,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data'):
     X      = scaler.transform(X_raw)
  
     if not exists('gpr_density.pkl'):
-        if fea==1:
-            length_scale = [0.0525, 0.0525,0.0493, 0.01, 0.0439, 0.163, 1.0, 1.0]
-        else:
-            length_scale = [0.0525, 0.0493, 0.01, 0.0439, 0.163, 1.0, 1.0]
+        length_scale = [0.1 for _ in feature]
             
         kernel = ( 0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50)) +   # 线性/多项式趋势 捕捉线性趋势及二阶耦合 (x_i * x_j)
                     0.35**2 * Matern(length_scale=length_scale, nu=2.5) +         # 局部耦合
@@ -95,9 +107,9 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data'):
         gpr_energy.fit(X,y_eng)
         # score  =  gaussian_process.score(X, y)
         with open('gpr_density.pkl', 'wb') as f:
-                pickle.dump(gpr_density, f)
+             pickle.dump(gpr_density, f)
         with open('gpr_energy.pkl', 'wb') as f:
-                pickle.dump(gpr_energy, f)
+             pickle.dump(gpr_energy, f)
         with open('../{:s}/gpcsp.log'.format(resf),'w') as fl:
                 print(gpr_density.kernel_,file=fl)
                 print(gpr_density.log_marginal_likelihood(),file=fl)
@@ -108,83 +120,53 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data'):
                     # print(hyperparameter,file=fl)
     else:
         with open('gpr_density.pkl', 'rb') as f:
-                gpr_density = pickle.load(f)
+             gpr_density = pickle.load(f)
         with open('gpr_energy.pkl', 'rb') as f:
-                gpr_energy = pickle.load(f)
+             gpr_energy = pickle.load(f)
        
-if not exists('rfr_density.pkl'):
-   rfr_density = RandomForestRegressor(random_state=37, n_estimators=300,
+    if not exists('rfr_density.pkl'):
+       rfr_density = RandomForestRegressor(random_state=37, n_estimators=300,
                                        min_weight_fraction_leaf=0.0,
                                        oob_score=True)
-   rfr_density.fit(X, y)  # train
-   feature_importances = rfr_density.feature_importances_
-   with open('rfr_density.pkl', 'wb') as f:
-        pickle.dump(rfr_density, f)
-else:
-   with open('rfr_density.pkl', 'rb') as f:
-        rfr_density = pickle.load(f)
+       rfr_density.fit(X, y)  # train
+       feature_importances = rfr_density.feature_importances_
+       with open('rfr_density.pkl', 'wb') as f:
+            pickle.dump(rfr_density, f)
+    else:
+       with open('rfr_density.pkl', 'rb') as f:
+            rfr_density = pickle.load(f)
 
-if not exists('../{:s}/gpcsp.csv'.format(resf)):
-   with open('../{:s}/gpcsp.csv'.format(resf),'w') as fd:
-        print(',   index,          residual,        density_min,         density_rf,   density_gp,'
-              '          uncertainty,           energy_min,       eng_pred,        uncertainty_eng',file=fd)
+    if not exists('../{:s}/gpcsp.csv'.format(resf)):
+        with open('../{:s}/gpcsp.csv'.format(resf),'w') as fd:
+             print(',   index,          residual,        density_min,         density_rf,   density_gp,'
+                '          uncertainty,           energy_min,       eng_pred,        uncertainty_eng',file=fd)
 
-# X_ = np.concatenate((X,np.expand_dims(feature,axis=0)))  #X_train.extend(feature)
-X_ = scaler.transform(np.expand_dims(feature,axis=0))
-mean_prediction, std_prediction = gpr_density.predict(X_, return_std=True)
-mean_eng_pred, std_eng_pred = gpr_energy.predict(X_, return_std=True)
-density_rf = rfr_density.predict(X_)
-# print('95% confidence interval: \n', 1.96 * std_prediction)
+    # X_ = np.concatenate((X,np.expand_dims(feature,axis=0)))  #X_train.extend(feature)
+    X_ = scaler.transform(np.expand_dims(feature,axis=0))
+    mean_prediction, std_prediction = gpr_density.predict(X_, return_std=True)
+    mean_eng_pred, std_eng_pred = gpr_energy.predict(X_, return_std=True)
+    density_rf = rfr_density.predict(X_)
+    # print('95% confidence interval: \n', 1.96 * std_prediction)
          
-with open('../{:s}/gpcsp.csv'.format(resf),'a') as fd:
-     # id_ = fd.tell()
-     print(0,',',imin,',',res[imin],',',data_[imin][-1],',',
-           density_rf[0],',',mean_prediction[0],',',
-           1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
-           file=fd)
+    with open('../{:s}/gpcsp.csv'.format(resf),'a') as fd:
+        # id_ = fd.tell()
+        print(0,',',imin,',',res[imin],',',data_[imin][-1],',',
+            density_rf[0],',',mean_prediction[0],',',
+            1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
+            file=fd)
     
-if not gp:
-    with open('../{:s}/gpcsp.log'.format(resf),'a') as fd:
-       # id_ = fd.tell()
-       print(0,imin,res[imin],data_[imin][-1],data_[imin][1],
-             mean_eng_pred[0],1.96*std_eng_pred[0],
-             e_mean,e[0],
-             file=fd)  # for debug
-    if e_mean-e[0]>broken:
-       energy = 100000
-    else:
-       energy = e[0]
-    write_output(e=energy)
-    write_geometry(atoms=atoms)
-else:
-    if gp==1:
-       density_= mean_prediction[0] # data_[ind[0][im],-1]
-       if density_>np.max(y)*1.1 and (density_/density>1.5 or  density/density_>1.5):
-          if density_rf[0]/density>1.5 or  density/densityrf[0]>1.5:
-             density_ = density*d_scaler
-          else:
-             density_ = density_rf[0]
-    else:
-       density_= density_rf[0] # data_[ind[0][im],-1]
+  
+    density_= mean_prediction[0] # data_[ind[0][im],-1]
+    if density_>np.max(y)*1.1 and (density_/density>1.5 or  density/density_>1.5):
+       if density_rf[0]/density>1.5 or  density/densityrf[0]>1.5:
+          density_ = density*d_scaler
+       else:
+          density_ = density_rf[0]
+ 
     energy  = -density_ # mean_eng_pred[0]
     write_output(e=energy)
     write_geometry(atoms=atoms)
-
-def get_feature(atoms,n=1,lib='reaxff_nn'):
-    write_gulp_in(atoms,runword='gradient nosymmetry conv qite verb',lib=lib)
-    if n==1:
-       subprocess.call('gulp<inp-gulp>out',shell=True)
-    else:
-       subprocess.call('mpirun -n {:d} gulp<inp-gulp>out'.format(n),shell=True)
-    e = get_reax_energy(fo='out')
-    return e
-
-
-def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
-    lib = generate_hbond_lib(elements)
-    e = get_feature(atoms,n=n,lib=lib)
-    return e
-
+    
 
 def calcdata(traj='structures.traj',n=8,step=1000):
     images      = Trajectory(traj)
