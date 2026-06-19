@@ -291,7 +291,7 @@ def get_gulp_energy(atoms, ncpu=8):
 
 def load_gaussian_process(X, y, y_eng):
     if X.shape[1] == 8:
-    length_scale = [0.1 for i in range(X.shape[1])]
+       length_scale = [0.1 for i in range(X.shape[1])]
 
     if not exists("gpr_density.pkl"):
         kernel = (
