@@ -65,9 +65,9 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     density = masses/volume/0.602214129
     atoms.calc = SinglePointCalculator(atoms,energy=e[0])
 
-    e_cho = get_hbond_feature(atoms,ncpu=n,elements='H core C core O core')
-    e_chn = get_hbond_feature(atoms,ncpu=n,elements='H core C core N core')
-    e_chc = get_hbond_feature(atoms,ncpu=n,elements='H core C core C core')
+    e_cho = get_hbond_feature(atoms,n=n,elements='H core C core O core')
+    e_chn = get_hbond_feature(atoms,n=n,elements='H core C core N core')
+    e_chc = get_hbond_feature(atoms,n=n,elements='H core C core C core')
 
     if fea==1:
        # feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
