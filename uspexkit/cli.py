@@ -13,6 +13,7 @@ COMMANDS = {
     "fdf":  (fdf,  "Generate SIESTA input files"),
     "sample": (sample, "Sample structures by index to trajectory"),
     "calcdata": (calcdata, "calculate the feature vector of crystal structures"),
+    "gp": (gp, "Gaussian process to predict the crystal density"),
 }
 
 
@@ -71,6 +72,17 @@ def main():
     p_calcdata.add_argument("--t", default='structures.traj', help="Trajectory file")
     p_calcdata.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
 
+   # ── gp ── gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data',resf='resualts1')
+    p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
+    p_gp.add_argument("--n", default=1, help="number cpu tobe used")
+    p_gp.add_argument("--t", default=0.005, help="structure match tolerence")
+    p_gp.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
+    p_gp.add_argument("--b", default=1.5, help="energy devate the mean tolerence that the structure is broken")
+    p_gp.add_argument("--u", default=0.2, help="uncertainty of Gaussian Process")
+    p_gp.add_argument("--f", default=1, help="which feature factor to be used")
+    p_gp.add_argument("--data", default='data', help="which data to be used")
+    p_gp.add_argument("--resf", default='resualts1', help="resualts file directory")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -96,6 +108,7 @@ def main():
         cmd_func(ind=args.ind, t=args.t)
     elif args.command == "calcdata":
         cmd_func(traj=args.t, step=args.step,n=args.n)
-
+    elif args.command == "gp":
+        cmd_func(tolerance=args.t,step=args.step,n=1,b=args.b,u=args.u,f=args.f,data=args.data,resf=args.resf)
 
         
