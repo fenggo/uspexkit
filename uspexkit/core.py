@@ -65,9 +65,9 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     density = masses/volume/0.602214129
     atoms.calc = SinglePointCalculator(atoms,energy=e[0])
 
-    e_cho = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core O core')
-    e_chn = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core N core')
-    e_chc = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core C core')
+    e_cho = get_hbond_feature(atoms,ncpu=n,elements='H core C core O core')
+    e_chn = get_hbond_feature(atoms,ncpu=n,elements='H core C core N core')
+    e_chc = get_hbond_feature(atoms,ncpu=n,elements='H core C core C core')
 
     if fea==1:
        # feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
@@ -277,8 +277,7 @@ def fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1):
 # ──────────────────────────────────────────────
 
 def get_gulp_energy(atoms, ncpu=8):
-    from irff.md.gulp import opt as gulp_opt, get_reax_energy, write_gulp_in
-    atoms_opt = gulp_opt(atoms=atoms, step=1000, l=1, t=0.000001, n=ncpu, lib="reaxff_nn")
+    atoms_opt = opt(atoms=atoms, step=1000, l=1, t=0.000001, n=ncpu, lib="reaxff_nn")
     write_gulp_in(atoms_opt, runword="gradient nosymmetry conv qite verb", lib="reaxff_nn")
     if ncpu == 1:
         subprocess.call("gulp<inp-gulp>out", shell=True)
@@ -393,9 +392,9 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         chdir(data_dir)
         atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
 
-        e_cho = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core O core')
-        e_chn = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core N core')
-        e_chc = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core C core')
+        e_cho = get_hbond_feature(atoms_mlp,ncpu=n,elements='H core C core O core')
+        e_chn = get_hbond_feature(atoms_mlp,ncpu=n,elements='H core C core N core')
+        e_chc = get_hbond_feature(atoms_mlp,ncpu=n,elements='H core C core C core')
         
         if f == 1:
             feature = np.array([e[0],e[1],e[5],e[8],e[10],e_chc[11],e_chn[11],e_cho[11],e[12],density])
