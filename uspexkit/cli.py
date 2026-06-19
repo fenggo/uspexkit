@@ -2,8 +2,7 @@
 
 import argparse
 import sys
-
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -14,6 +13,7 @@ COMMANDS = {
     "sample": (sample, "Sample structures by index to trajectory"),
     "calcdata": (calcdata, "calculate the feature vector of crystal structures"),
     "gp": (gp, "Gaussian process to predict the crystal density"),
+    "fixbroken": (fixbroken, "fix broken molecule"),
 }
 
 
@@ -72,7 +72,7 @@ def main():
     p_calcdata.add_argument("--t", default='structures.traj', help="Trajectory file")
     p_calcdata.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
 
-   # ── gp ── gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data',resf='resualts1')
+   # ── gp ──  
     p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
     p_gp.add_argument("--n", default=1, help="number cpu tobe used")
     p_gp.add_argument("--t", default=0.005, help="structure match tolerence")
@@ -82,6 +82,13 @@ def main():
     p_gp.add_argument("--f", default=1, help="which feature factor to be used")
     p_gp.add_argument("--data", default='data', help="which data to be used")
     p_gp.add_argument("--resf", default='resualts1', help="resualts file directory")
+
+ # ── fixbroken ── fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1)
+    p_fixbroken = sub.add_parser("fixbroken", help=COMMANDS["fixbroken"][1])
+    p_fixbroken.add_argument("--n", default=1, help="number cpu tobe used")
+    p_fixbroken.add_argument("--data", default='data', help="which data to be used")
+    p_fixbroken.add_argument("--s", default=1.2, help="scale factor")
+    p_fixbroken.add_argument("--b", default=1.5, help="energy devate the mean tolerence that the structure is broken")
 
     args = parser.parse_args()
 
@@ -109,6 +116,8 @@ def main():
     elif args.command == "calcdata":
         cmd_func(traj=args.t, step=args.step,n=args.n)
     elif args.command == "gp":
-        cmd_func(tolerance=args.t,step=args.step,n=1,b=args.b,u=args.u,f=args.f,data=args.data,resf=args.resf)
+        cmd_func(tolerance=args.t,step=args.step,n=1,b=args.b,u=args.u,f=args.f,dat=args.data,resf=args.resf)
+    elif args.command == "fixbroken":
+        cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
 
         

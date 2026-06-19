@@ -28,7 +28,8 @@ from uspexkit.utils import (read_individuals, search_structure,generate_hbond_li
 # from irff.md.lammps import writeLammpsData,writeLammpsIn,get_lammps_thermal,lammpstraj_to_ase
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
 # from irff.dft.dftb import dftb_opt
-# from irff.dft.siesta import siesta_opt #
+from irff.molecule import Molecules,enlarge # SuperCell,moltoatoms
+
 
 ''' A work flow in combination with USPEX 
     High-Throughput Evolutionary Crystal Structure Prediction Method
@@ -50,7 +51,7 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
     return e
 
 
-def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data',resf='results1'):
+def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1'):
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
     run_gulp(n=ncpu,inp='inp-grad')
     e = get_reax_energy(fo='output')
@@ -69,25 +70,25 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data',resf='results1'
        feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
  
 
-    data   = np.loadtxt('../{:s}/feature_mlp.csv'.format(data),delimiter=',',skiprows=1)  ## get crystal feature data
-    data_  = np.loadtxt('../{:s}/feature.csv'.format(data),delimiter=',',skiprows=1)      ## get crystal feature data
-    images = Trajectory('../{:s}/structures.traj'.format(data))
+    data   = np.loadtxt('../{:s}/feature_mlp.csv'.format(dat),delimiter=',',skiprows=1)  ## get crystal feature data
+    data_  = np.loadtxt('../{:s}/feature.csv'.format(dat),delimiter=',',skiprows=1)      ## get crystal feature data
+    images = Trajectory('../{:s}/structures.traj'.format(dat))
     d      = data[:,1:]    # 去掉索引
 
     # Train a Gaussian Process 
     res    = np.sum(np.square(d - feature),axis=1)
     ind    = np.where(res<tolerance)
     imin   = np.argmin(res)
-    # print(ind)
+
     ### prepare data 
     X_raw  = data[:,1:]
     y      = data_[:,-1]
     y_eng  = data_[:,1]
-    # x_mean = np.mean(X,axis=0) 
+
     d_scaler= np.mean(y)/np.mean(data[:,-1])
     e_mean = np.mean(data[:,1])
     e_scaler= e_mean - np.mean(y_eng)
-    # X      = X - x_mean
+
     scaler = preprocessing.StandardScaler().fit(X_raw)
     X      = scaler.transform(X_raw)
  
@@ -210,6 +211,60 @@ def calcdata(traj='structures.traj',n=8,step=1000):
                 e[12],',',density_,file=fd_) 
             
     traj_.close()
+
+# ──────────────────────────────────────────────
+#  fix broken molecule
+# ──────────────────────────────────────────────
+def fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1):
+    write_input(inp='inp-grad',keyword='grad conv qiterative verb')
+    run_gulp(n=ncpu,inp='inp-grad')
+    e = get_reax_energy(fo='output')
+    write_output(e=e[0])
+
+    atoms  = read('gulp.cif')
+    # atoms  = opt(atoms=atoms,step=step,l=1,t=0.000001,n=ncpu, lib='reaxff_nn')
+    masses = np.sum(atoms.get_masses())
+    volume = atoms.get_volume()
+    density = masses/volume/0.602214129
+    atoms.calc = SinglePointCalculator(atoms,energy=e[0])
+    # feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
+
+    data   = np.loadtxt('../{:s}/feature_mlp.csv'.format(dat),delimiter=',',skiprows=1)  ## get crystal feature data
+    data_  = np.loadtxt('../{:s}/feature.csv'.format(dat),delimiter=',',skiprows=1)      ## get crystal feature data
+    images = Trajectory('../{:s}/structures.traj'.format(dat))
+    d      = data[:,1:]    # 去掉索引
+
+    ### prepare data 
+    X_raw  = data[:,1:]
+    y      = data_[:,-1]
+    y_eng  = data_[:,1]
+    d_scale= np.mean(y)/np.mean(data[:,-1])
+    e_mean = np.mean(data[:,1])
+    e_scale= e_mean - np.mean(y_eng)
+
+    if e_mean-e[0]>broken:
+       if exists("molecule.pkl"):
+          with open("molecule.pkl", "rb") as f:
+               m_ = pickle.load(f)
+          for m in m_:
+              for i,na in enumerate(m.mol_index):
+                  m.mol_x[i] = atoms.positions[na]
+
+          for m in m_:
+              m.center       = np.sum(m.mol_x,axis=0)/m.natom
+        
+          nmol    = len(m_)
+          cell    = atoms.get_cell()
+          _,atoms = enlarge(m_,cell=cell,fac=scale,supercell=[1,1,1])
+    else:
+       if not exists("molecule.pkl"):
+          m_  = Molecules(atoms,rcut={"H-H":1.0,"H-O":1.02,"O-O":1.4,"H-N":1.22,"H-C":1.35,
+                                "others": 1.75},check=True)
+          with open("molecule.pkl", "wb") as f:
+               pickle.dump(m_, f)
+    
+    write_output(e=e[0])
+    write_geometry(atoms=atoms)
 
 # ──────────────────────────────────────────────
 #  GULP energy helper
