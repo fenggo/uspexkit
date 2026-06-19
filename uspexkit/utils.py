@@ -1,4 +1,5 @@
 """Utility classes and functions for USPEX data processing."""
+from os.path import exists
 import re
 import subprocess
 import numpy as np
