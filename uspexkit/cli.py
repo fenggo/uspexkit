@@ -81,7 +81,7 @@ def main():
     p_gp.add_argument("--u", default=0.2, help="uncertainty of Gaussian Process")
     p_gp.add_argument("--f", default=1, help="which feature factor to be used")
     p_gp.add_argument("--data", default='data', help="which data to be used")
-    p_gp.add_argument("--resf", default='resualts1', help="resualts file directory")
+    p_gp.add_argument("--resf", default='results1', help="results file directory")
 
  # ── fixbroken ── fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1)
     p_fixbroken = sub.add_parser("fixbroken", help=COMMANDS["fixbroken"][1])

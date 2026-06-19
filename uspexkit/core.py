@@ -118,13 +118,13 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
         with open('gpr_energy.pkl', 'wb') as f:
              pickle.dump(gpr_energy, f)
         with open('../{:s}/gpcsp.log'.format(resf),'w') as fl:
-                print(gpr_density.kernel_,file=fl)
-                print(gpr_density.log_marginal_likelihood(),file=fl)
-                print(gpr_energy.kernel_,file=fl)
-                print(gpr_energy.log_marginal_likelihood(),file=fl)
-                # for hyperparameter in kernel.hyperparameters:
-                    # print(kernel.kernel_,file=fl)
-                    # print(hyperparameter,file=fl)
+            print(gpr_density.kernel_,file=fl)
+            print(gpr_density.log_marginal_likelihood(),file=fl)
+            print(gpr_energy.kernel_,file=fl)
+            print(gpr_energy.log_marginal_likelihood(),file=fl)
+            # for hyperparameter in kernel.hyperparameters:
+                  # print(kernel.kernel_,file=fl)
+                  # print(hyperparameter,file=fl)
     else:
         with open('gpr_density.pkl', 'rb') as f:
              gpr_density = pickle.load(f)
