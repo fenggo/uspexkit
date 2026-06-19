@@ -64,8 +64,13 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     density = masses/volume/0.602214129
     atoms.calc = SinglePointCalculator(atoms,energy=e[0])
 
+    e_cho = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core O core')
+    e_chn = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core N core')
+    e_chc = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core C core')
+
     if fea==1:
-       feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
+       # feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
+       feature = np.array([e[0],e[1],e[5],e[8],e[10],e_chc[11],e_chn[11],e_cho[11],e[12],density])
     else:
        feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
  
@@ -197,7 +202,7 @@ def calcdata(traj='structures.traj',n=8,step=1000):
         
         volume = atoms.get_volume()
         density = masses/volume/0.602214129
-    #  print(e)
+        #  print(e)
         print('ID {:4d}: etol {:8.4f} ebond: {:8.4f} eang: {:8.4f} etor: {:8.4f} evdw: {:8.4f} '
             'ehb: {:8.4f}  {:8.4f} {:8.4f} {:8.4f} ' 
             'ecoul: {:8.4f} density: {:9.6}'.format(i,e[0],e[1],e[5],e[8],e[10],
@@ -386,16 +391,20 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
 
         chdir(data_dir)
         atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
-        e_cho = get_hbond_energy(atoms,ncpu=ncpu)
+
+        e_cho = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core O core')
+        e_chn = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core N core')
+        e_chc = get_hbond_feature(atoms_rnn,ncpu=n,elements='H core C core C core')
+        
         if f == 1:
-            feature = np.array([e[0], e[1], e[5], e[8], e[10], e[11], e[12], density])
+            feature = np.array([e[0],e[1],e[5],e[8],e[10],e_chc[11],e_chn[11],e_cho[11],e[12],density])
         else:
             feature = np.array([e[0], e[5], e[8], e[10], e[11], e[12], density])
 
         assert exists("structures.traj"), "Error, datafile not found in data directory!"
-
         data = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
         data_ = np.loadtxt("feature.csv", delimiter=",", skiprows=1)
+        struc= Trajectory('structures.traj')
 
         D = data[:, 1:]
         D_ = data_[:, 1:]
