@@ -54,7 +54,7 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
 
 def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1'):
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
-    run_gulp(n=ncpu,inp='inp-grad')
+    run_gulp(n=n,inp='inp-grad')
     e = get_reax_energy(fo='output')
     write_output(e=e[0])
 

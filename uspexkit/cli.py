@@ -74,7 +74,7 @@ def main():
 
    # ── gp ──  
     p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
-    p_gp.add_argument("--n", default=1, help="number cpu tobe used")
+    p_gp.add_argument("--n", type=int, default=1, help="number cpu tobe used")
     p_gp.add_argument("--t", default=0.005, help="structure match tolerence")
     p_gp.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
     p_gp.add_argument("--b", default=1.5, help="energy devate the mean tolerence that the structure is broken")
@@ -116,7 +116,7 @@ def main():
     elif args.command == "calcdata":
         cmd_func(traj=args.t, step=args.step,n=args.n)
     elif args.command == "gp":
-        cmd_func(tolerance=args.t,step=args.step,n=1,b=args.b,u=args.u,f=args.f,dat=args.data,resf=args.resf)
+        cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,dat=args.data,resf=args.resf)
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
 
