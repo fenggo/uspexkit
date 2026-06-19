@@ -24,7 +24,8 @@ from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.calculators.singlepoint import SinglePointCalculator
 from irff.md.gulp import opt,get_reax_energy,write_gulp_in
 from uspexkit.utils import (read_individuals, search_structure,generate_hbond_lib,
-                            add_structure)
+                            add_structure, write_input,run_gulp,
+                            write_output,write_geometry)
 # from irff.md.lammps import writeLammpsData,writeLammpsIn,get_lammps_thermal,lammpstraj_to_ase
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
 # from irff.dft.dftb import dftb_opt
