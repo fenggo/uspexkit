@@ -69,9 +69,9 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,data='data',resf='results1'
        feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
  
 
-    data   = np.loadtxt('../{:s}/feature_mlp.csv'.format(datafile),delimiter=',',skiprows=1)  ## get crystal feature data
-    data_  = np.loadtxt('../{:s}/feature.csv'.format(datafile),delimiter=',',skiprows=1)      ## get crystal feature data
-    images = Trajectory('../{:s}/structures.traj'.format(datafile))
+    data   = np.loadtxt('../{:s}/feature_mlp.csv'.format(data),delimiter=',',skiprows=1)  ## get crystal feature data
+    data_  = np.loadtxt('../{:s}/feature.csv'.format(data),delimiter=',',skiprows=1)      ## get crystal feature data
+    images = Trajectory('../{:s}/structures.traj'.format(data))
     d      = data[:,1:]    # 去掉索引
 
     # Train a Gaussian Process 
