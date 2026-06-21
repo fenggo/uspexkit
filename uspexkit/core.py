@@ -37,7 +37,7 @@ from irff.molecule import Molecules,enlarge # SuperCell,moltoatoms
     High-Throughput Evolutionary Crystal Structure Prediction Method
 '''
 
-def add(traj='structures.traj',step=1000,tolerance=0.01,ncpu=1):
+def add(traj='structures.traj',step=1000,tolerence=0.005,ncpu=1):
     # subprocess.call('cp structures.traj structures.traj.backup',shell=True)
     # subprocess.call('cp structures_mlp.traj structures_mlp.traj.backup',shell=True)
     # subprocess.call('cp feature.csv feature.csv.backup',shell=True)
