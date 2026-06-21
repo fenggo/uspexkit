@@ -24,17 +24,67 @@ from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.calculators.singlepoint import SinglePointCalculator
 from irff.md.gulp import opt,get_reax_energy,write_gulp_in
 from uspexkit.utils import (read_individuals, search_structure,generate_hbond_lib,
-                            add_structure, write_input,run_gulp,
+                            write_input,run_gulp, # add_structure,
                             write_output,write_geometry)
 # from irff.md.lammps import writeLammpsData,writeLammpsIn,get_lammps_thermal,lammpstraj_to_ase
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
 # from irff.dft.dftb import dftb_opt
+from irff.dft.siesta import siesta_opt
 from irff.molecule import Molecules,enlarge # SuperCell,moltoatoms
 
 
 ''' A work flow in combination with USPEX 
     High-Throughput Evolutionary Crystal Structure Prediction Method
 '''
+
+def add(atomes_dft,step=1000,tolerance=0.01,ncpu=1):
+    # subprocess.call('cp structures.traj structures.traj.backup',shell=True)
+    # subprocess.call('cp structures_mlp.traj structures_mlp.traj.backup',shell=True)
+    # subprocess.call('cp feature.csv feature.csv.backup',shell=True)
+    # subprocess.call('cp feature_mlp.csv feature_mlp.csv.backup',shell=True)
+    masses  = np.sum(atoms_dft.get_masses())
+    volume  = atoms_dft.get_volume()
+    density = masses/volume/0.602214129
+    energy  = atoms_dft.get_potential_energy()
+
+    atoms = opt(atoms=atoms_dft,step=step,l=1,t=0.000001,n=ncpu, lib='reaxff_nn')              ## compute feature
+    e     = get_feature(atoms,n=n,lib='reaxff_nn')
+    e_cho = get_hbond_feature(atoms,n=n,elements='H core C core O core')
+    e_chn = get_hbond_feature(atoms,n=n,elements='H core C core N core')
+    e_chc = get_hbond_feature(atoms,n=n,elements='H core C core C core')
+
+    volume   = atoms.get_volume()
+    density_ = masses/volume/0.602214129
+    
+    data = np.loadtxt('feature_mlp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
+    data_= np.loadtxt('feature.csv',delimiter=',',skiprows=1)          ## get crystal feature data
+    d    = data[:,1:]         # 去掉索引
+    i    = int(data[-1][0])   # 获取索引
+    # print(cry)
+    feature = np.array([e[0],e[1],e[5],e[8],e[10],e_chc[11],e_chn[11],e_cho[11],e[12],density_])
+    res  = np.sum(np.square(d - feature),axis=1)
+    ind  = np.where(res<tolerance)
+    
+    if len(ind[0])>0:
+       print(f'Structure already in database with index {ind[0]}!') 
+       print(f'energy: {d[ind[0],0]}')
+    else:
+       with open('feature_mlp.csv','a') as fd:
+            print(i,',',feature[0],',',feature[1],',',feature[2],',',feature[3],',',feature[4],',',
+                     feature[5],',',feature[6],',',feature[7],',',
+                     feature[8],',',feature[9],
+                     file=fd) 
+       with open('feature.csv','a') as fd:
+            print(i,',',energy,',',feature[1],',',feature[2],',',feature[3],',',feature[4],',',
+                  feature[5],',',feature[6],',',feature[7],',',
+                  feature[8],',',density,file=fd)  
+    
+       atoms.calc = SinglePointCalculator(atoms,energy=e[0])
+       with TrajectoryWriter('structures_mlp.traj',mode='a') as traj:
+            traj.write(atoms=atoms)
+       with TrajectoryWriter('structures.traj',mode='a') as traj:
+            traj.write(atoms=atoms_dft)
+
 
 def get_feature(atoms,n=1,lib='reaxff_nn'):
     write_gulp_in(atoms,runword='gradient nosymmetry conv qite verb',lib=lib)
@@ -493,7 +543,11 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
 
         chdir(data_dir)
         atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
-        feature = np.array([e[0], e[1], e[5], e[8], e[10], e[11], e[12], density])
+        e_cho = get_hbond_feature(atoms_mlp,n=n,elements='H core C core O core')
+        e_chn = get_hbond_feature(atoms_mlp,n=n,elements='H core C core N core')
+        e_chc = get_hbond_feature(atoms_mlp,n=n,elements='H core C core C core')
+
+        feature = np.array([e[0], e[1], e[5], e[8], e[10], e_cho[11], e_chn[11], e_chn[11],e[12], density])
 
         if exists("structures.traj"):
             data = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
@@ -509,9 +563,9 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
         else:
             ind = [[]]
             with open("feature_mlp.csv", "w") as fd:
-                print(", etot, ebond, eang, etor, evdw, ehb, ecoul, density", file=fd)
+                print(", etot, ebond, eang, etor, evdw, ehb_cho, ehb_chn, ehb_chc, ecoul, density", file=fd)
             with open("feature.csv", "w") as fd_:
-                print(", etot, ebond, eang, etor, evdw, ehb, ecoul, density", file=fd_)
+                print(", etot, ebond, eang, etor, evdw, ehb_cho, ehb_chn, ehb_chc, ecoul, density", file=fd_)
             masses = np.sum(atoms.get_masses())
             volume = atoms.get_volume()
             density = masses / volume / 0.602214129
@@ -534,7 +588,6 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
             traj_w.write(atoms=struc[imin])
             traj_w.close()
         else:
-            from irff.dft.siesta import siesta_opt
             subprocess.call(f"cp {rootdir}/Specific/*.psf ./", shell=True)
             img = siesta_opt(atoms, ncpu=ncpu, us="F", VariableCell="true", tstep=step,
                              xcf="GGA", xca="PBE", basistype="split")
@@ -561,10 +614,10 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
             chdir(data_dir)
             with open("feature_mlp.csv", "a") as fd:
                 print(f"0,{feature[0]},{feature[1]},{feature[2]},{feature[3]},"
-                      f"{feature[4]},{feature[5]},{feature[6]},{feature[7]}", file=fd)
+                      f"{feature[4]},{feature[5]},{feature[6]},{feature[7]},{feature[8]},{feature[9]}", file=fd)
             with open("feature.csv", "a") as fd:
                 print(f"0,{energy},{feature[1]},{feature[2]},"
-                      f"{feature[3]},{feature[4]},{feature[5]},{feature[6]},{density}", file=fd)
+                      f"{feature[3]},{feature[4]},{feature[5]},{feature[6]},{feature[7]},{feature[8]},{density}", file=fd)
 
             atoms_opt.calc = SinglePointCalculator(atoms_opt, energy=energy)
             with TrajectoryWriter("structures_mlp.traj", mode="a") as traj_w:

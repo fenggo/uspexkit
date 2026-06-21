@@ -233,21 +233,21 @@ def optimize(atoms,calc=2,ncpu=8,step=1000):
       raise SystemExit(1)
    return atoms 
 
-def add_structure(i,atomes_dft,atoms_mlp,feature=None,data=None):
-    with TrajectoryWriter('../{:s}/structures_mlp.traj'.format(data),mode='a') as traj:
-         traj.write(atoms=atoms_mlp)
-    with TrajectoryWriter('../{:s}/structures.traj'.format(data),mode='a') as traj_:
-         traj_.write(atoms=atoms_dft)
+# def add_structure(i,atomes_dft,atoms_mlp,feature=None,data=None):
+#     with TrajectoryWriter('../{:s}/structures_mlp.traj'.format(data),mode='a') as traj:
+#          traj.write(atoms=atoms_mlp)
+#     with TrajectoryWriter('../{:s}/structures.traj'.format(data),mode='a') as traj_:
+#          traj_.write(atoms=atoms_dft)
 
-    masses  = np.sum(atoms_dft.get_masses())
-    volume  = atoms_dft.get_volume()
-    density = masses/volume/0.602214129
-    energy  = atoms_dft.get_potential_energy()
+#     masses  = np.sum(atoms_dft.get_masses())
+#     volume  = atoms_dft.get_volume()
+#     density = masses/volume/0.602214129
+#     energy  = atoms_dft.get_potential_energy()
 
-    with open('../{:s}/feature_mlp.csv'.format(data),'a') as fd:
-         print(i,',',feature[0],',',feature[1],',',feature[2],',',feature[3],',',
-                     feature[4],',',feature[5],',',feature[6],',',feature[7],file=fd) 
-    with open('../{:s}/feature.csv'.format(data),'a') as fd:
-         print(i,',',energy,',',feature[1],',',feature[2],',',
-               feature[3],',',feature[4],',',feature[5],',',feature[6],',',density,file=fd)
+#     with open('../{:s}/feature_mlp.csv'.format(data),'a') as fd:
+#          print(i,',',feature[0],',',feature[1],',',feature[2],',',feature[3],',',
+#                      feature[4],',',feature[5],',',feature[6],',',feature[7],file=fd) 
+#     with open('../{:s}/feature.csv'.format(data),'a') as fd:
+#          print(i,',',energy,',',feature[1],',',feature[2],',',
+#                feature[3],',',feature[4],',',feature[5],',',feature[6],',',density,file=fd)
         
