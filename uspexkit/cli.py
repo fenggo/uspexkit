@@ -126,5 +126,6 @@ def main():
         cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,dat=args.data,resf=args.resf)
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
-
+    elif args.command == "add":
+        cmd_func(traj=args.t,dat=args.data,step=args.s,ncpu=args.n)
         
