@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -14,6 +14,7 @@ COMMANDS = {
     "calcdata": (calcdata, "calculate the feature vector of crystal structures"),
     "gp": (gp, "Gaussian process to predict the crystal density"),
     "fixbroken": (fixbroken, "fix broken molecule"),
+    "add": (add, "add a structure to data"),
 }
 
 
@@ -89,6 +90,12 @@ def main():
     p_fixbroken.add_argument("--data", default='data', help="which data to be used")
     p_fixbroken.add_argument("--s", type=float,default=1.2, help="scale factor")
     p_fixbroken.add_argument("--b", type=float,default=1.5, help="energy devate the mean tolerence that the structure is broken")
+
+ # ── add ── add(atomes_dft,step=1000,tolerance=0.01,ncpu=1)
+    p_add = sub.add_parser("add", help=COMMANDS["add"][1])
+    p_add.add_argument("--n", type=int, default=1, help="number cpu tobe used")
+    p_add.add_argument("--data", default='data', help="which data to be used")
+    p_add.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
 
     args = parser.parse_args()
 
