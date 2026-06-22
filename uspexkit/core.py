@@ -348,8 +348,7 @@ def get_gulp_energy(atoms, ncpu=8):
 # ──────────────────────────────────────────────
 
 def load_gaussian_process(X, y, y_eng):
-    if X.shape[1] == 8:
-       length_scale = [0.1 for i in range(X.shape[1])]
+    length_scale = [0.1 for i in range(X.shape[1])]
 
     if not exists("gpr_density.pkl"):
         kernel = (
@@ -455,9 +454,9 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         #    feature = np.array([e[0],e[1],e[5], e[8], e[10], e[11], e[12], density])
 
         assert exists("structures.traj"), "Error, datafile not found in data directory!"
-        data = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
+        data  = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
         data_ = np.loadtxt("feature.csv", delimiter=",", skiprows=1)
-        struc= Trajectory('structures.traj')
+        struc = Trajectory('structures.traj')
 
         D = data[:, 1:]
         D_ = data_[:, 1:]
@@ -476,12 +475,12 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         X_ = scaler.transform(np.expand_dims(feature, axis=0))
         density_pred, std_den_pred = gpr_density.predict(X_, return_std=True)
         energy_pred, std_eng_pred = gpr_energy.predict(X_, return_std=True)
-        energy_pred = energy_pred[0]
+        energy_pred  = energy_pred[0]
         density_pred = density_pred[0]
         std_den_pred = std_den_pred[0]
         std_eng_pred = std_eng_pred[0]
-        density_rf = rfr.predict(X_)[0]
-        density_mlp = mlp.predict(X_)[0]
+        density_rf   = rfr.predict(X_)[0]
+        density_mlp  = mlp.predict(X_)[0]
 
         if f == 1:
             print(f"{s:5d} rf: {density_rf:9.4f} mlp: {density_mlp:9.4f} "
