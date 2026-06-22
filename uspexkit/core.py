@@ -343,7 +343,6 @@ def get_gulp_energy(atoms, ncpu=8):
     density = masses / volume / 0.602214129
     return atoms_opt, e, density
 
-
 # ──────────────────────────────────────────────
 #  ML model helpers
 # ──────────────────────────────────────────────
@@ -450,10 +449,10 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         e_chn = get_hbond_feature(atoms_mlp,ncpu=n,elements='H core C core N core')
         e_chc = get_hbond_feature(atoms_mlp,ncpu=n,elements='H core C core C core')
         
-        if f == 1:
-            feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
-        else:
-            feature = np.array([e[0],e[1],e[5], e[8], e[10], e[11], e[12], density])
+        # if f == 1:
+        feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
+        # else:
+        #    feature = np.array([e[0],e[1],e[5], e[8], e[10], e[11], e[12], density])
 
         assert exists("structures.traj"), "Error, datafile not found in data directory!"
         data = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
@@ -498,7 +497,6 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
             print(f"{s:5d} {density_mlp:9.6f} {density_rf:9.6f} "
                   f"{density_pred:9.6f} {energy_pred:10.6f} "
                   f"{std_den_pred:9.6f} {std_eng_pred:9.6f}", file=fd)
-
 
 # ──────────────────────────────────────────────
 #  calc — DFT 高通量计算
@@ -633,7 +631,6 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
         with open("density.log", "a") as fd:
             print(f"{s:5d} {density:10.6f} {energy:10.8f}", file=fd)
 
-
 # ──────────────────────────────────────────────
 #  traj — POSCAR to trajectory
 # ──────────────────────────────────────────────
@@ -686,7 +683,6 @@ def traj(fposcar="gatheredPOSCARS"):
     traj_w.write(atoms=atoms)
     traj_w.close()
 
-
 # ──────────────────────────────────────────────
 #  zmat — 内坐标
 # ──────────────────────────────────────────────
@@ -699,7 +695,6 @@ def zmat(geo="POSCAR", i=-1):
     zmat_data = ad.InitZmat
     ad.write_zmat(zmat_data, uspex=True)
     ad.close()
-
 
 # ──────────────────────────────────────────────
 #  fdf — 写 SIESTA 输入
@@ -718,7 +713,6 @@ def fdf(gen="poscar.gen", xcf="gga", i=-1):
                         VariableCell="true", xcf="VDW", xca="DRSLL", basistype="split")
     else:
         print("Not supported yet!")
-
 
 # ──────────────────────────────────────────────
 #  sample — 采样结构
