@@ -15,6 +15,7 @@ COMMANDS = {
     "gp": (gp, "Gaussian process to predict the crystal density"),
     "fixbroken": (fixbroken, "fix broken molecule"),
     "add": (add, "add a structure to data"),
+    "addall": (addall, "add a structure to data"),
 }
 
 
@@ -76,26 +77,32 @@ def main():
    # ── gp ──  
     p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
     p_gp.add_argument("--n", type=int, default=1, help="number cpu tobe used")
-    p_gp.add_argument("--t", default=0.005, help="structure match tolerence")
+    p_gp.add_argument("--t", default=0.005, help="structure match tolerance")
     p_gp.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
-    p_gp.add_argument("--b", default=1.5, help="energy devate the mean tolerence that the structure is broken")
+    p_gp.add_argument("--b", default=1.5, help="energy devate the mean tolerance that the structure is broken")
     p_gp.add_argument("--u", default=0.2, help="uncertainty of Gaussian Process")
     p_gp.add_argument("--f", default=1, help="which feature factor to be used")
     p_gp.add_argument("--data", default='data', help="which data to be used")
     p_gp.add_argument("--resf", default='results1', help="results file directory")
 
- # ── fixbroken ── fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1)
+ # ── fixbroken ── 
     p_fixbroken = sub.add_parser("fixbroken", help=COMMANDS["fixbroken"][1])
     p_fixbroken.add_argument("--n", type=int, default=1, help="number cpu tobe used")
     p_fixbroken.add_argument("--data", default='data', help="which data to be used")
     p_fixbroken.add_argument("--s", type=float,default=1.2, help="scale factor")
-    p_fixbroken.add_argument("--b", type=float,default=1.5, help="energy devate the mean tolerence that the structure is broken")
+    p_fixbroken.add_argument("--b", type=float,default=1.5, help="energy devate the mean tolerance that the structure is broken")
 
- # ── add ── add(atomes_dft,step=1000,tolerance=0.01,ncpu=1)
+ # ── add ── 
     p_add = sub.add_parser("add", help=COMMANDS["add"][1])
     p_add.add_argument("--n", type=int, default=1, help="number cpu tobe used")
-    p_add.add_argument("--tolerence",  type=float,default=0.005, help="match tolerence")
+    p_add.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_add.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
+
+ # ── addall ── 
+    p_addall = sub.add_parser("addall", help=COMMANDS["addall"][1])
+    p_addall.add_argument("--n", type=int, default=1, help="number cpu tobe used")
+    p_addall.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
+    p_addall.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
 
     args = parser.parse_args()
 
@@ -127,5 +134,6 @@ def main():
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
     elif args.command == "add":
-        cmd_func(traj=args.t,tolerence=args.tolerence,step=args.s,ncpu=args.n)
-        
+        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)
+    elif args.command == "addall":
+        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)

@@ -37,12 +37,15 @@ from irff.molecule import Molecules,enlarge # SuperCell,moltoatoms
     High-Throughput Evolutionary Crystal Structure Prediction Method
 '''
 
-def add(traj='structures.traj',step=1000,tolerence=0.005,ncpu=1):
-    # subprocess.call('cp structures.traj structures.traj.backup',shell=True)
-    # subprocess.call('cp structures_mlp.traj structures_mlp.traj.backup',shell=True)
-    # subprocess.call('cp feature.csv feature.csv.backup',shell=True)
-    # subprocess.call('cp feature_mlp.csv feature_mlp.csv.backup',shell=True)
-    atoms_dft = read(traj,-1)
+def addall(traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
+    images = Trajectory(traj)
+    for atoms_dft in images:
+        add(atoms_dft,step=step,tolerance=tolerance,ncpu=ncpu)
+ 
+
+def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
+    if atoms_dft is None:
+       atoms_dft = read(traj,-1)
     masses  = np.sum(atoms_dft.get_masses())
     volume  = atoms_dft.get_volume()
     density = masses/volume/0.602214129
