@@ -94,7 +94,7 @@ def main():
  # ── add ── add(atomes_dft,step=1000,tolerance=0.01,ncpu=1)
     p_add = sub.add_parser("add", help=COMMANDS["add"][1])
     p_add.add_argument("--n", type=int, default=1, help="number cpu tobe used")
-    p_add.add_argument("--tolerence",  type=float,default=0.005, help="match tolerence)
+    p_add.add_argument("--tolerence",  type=float,default=0.005, help="match tolerence")
     p_add.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
 
     args = parser.parse_args()
