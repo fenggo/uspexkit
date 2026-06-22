@@ -544,9 +544,9 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
 
         chdir(data_dir)
         atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
-        e_cho = get_hbond_feature(atoms_mlp,n=n,elements='H core C core O core')
-        e_chn = get_hbond_feature(atoms_mlp,n=n,elements='H core C core N core')
-        e_chc = get_hbond_feature(atoms_mlp,n=n,elements='H core C core C core')
+        e_cho = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core O core')
+        e_chn = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core N core')
+        e_chc = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core C core')
 
         feature = np.array([e[0], e[1], e[5], e[8], e[10], e_cho[11], e_chn[11], e_chn[11],e[12], density])
 
