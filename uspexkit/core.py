@@ -65,7 +65,7 @@ def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
     d    = data[:,1:]         # 去掉索引
     i    = int(data[-1][0])   # 获取索引
     # print(cry)
-    feature = np.array([e[0],e[1],e[5],e[8],e[10],e_chc[11],e_chn[11],e_cho[11],e[12],density_])
+    feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density_])
     res  = np.sum(np.square(d - feature),axis=1)
     ind  = np.where(res<tolerance)
     
@@ -125,7 +125,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
 
     if f==1:
        # feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
-       feature = np.array([e[0],e[1],e[5],e[8],e[10],e_chc[11],e_chn[11],e_cho[11],e[12],density])
+       feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
     else:
        feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
  
@@ -451,9 +451,9 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         e_chc = get_hbond_feature(atoms_mlp,ncpu=n,elements='H core C core C core')
         
         if f == 1:
-            feature = np.array([e[0],e[1],e[5],e[8],e[10],e_chc[11],e_chn[11],e_cho[11],e[12],density])
+            feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
         else:
-            feature = np.array([e[0], e[5], e[8], e[10], e[11], e[12], density])
+            feature = np.array([e[0],e[1],e[5], e[8], e[10], e[11], e[12], density])
 
         assert exists("structures.traj"), "Error, datafile not found in data directory!"
         data = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
@@ -551,7 +551,7 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
         e_chn = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core N core')
         e_chc = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core C core')
 
-        feature = np.array([e[0], e[1], e[5], e[8], e[10], e_cho[11], e_chn[11], e_chn[11],e[12], density])
+        feature = np.array([e[0], e[1], e[5], e[8], e[10], e_cho[11], e_chn[11], e_chc[11],e[12], density])
 
         if exists("structures.traj"):
             data = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
