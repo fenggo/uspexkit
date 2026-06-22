@@ -2,6 +2,8 @@
 from os.path import exists
 import re
 import subprocess
+# import torch
+# import gpytorch
 import numpy as np
 from ase.io.trajectory import TrajectoryWriter
 from irff.md.gulp import write_gulp_in
@@ -250,4 +252,17 @@ def optimize(atoms,calc=2,ncpu=8,step=1000):
 #     with open('../{:s}/feature.csv'.format(data),'a') as fd:
 #          print(i,',',energy,',',feature[1],',',feature[2],',',
 #                feature[3],',',feature[4],',',feature[5],',',feature[6],',',density,file=fd)
-        
+
+# class GP(gpytorch.models.ExactGP):
+#     def __init__(self, train_x, train_y, likelihood):
+#         super(GP, self).__init__(train_x, train_y, likelihood)
+#         self.mean_module = gpytorch.means.ConstantMean()
+#         self.covar_module = (
+#             gpytorch.kernels.ScaleKernel(gpytorch.kernels.LinearKernel()) +
+#             gpytorch.kernels.ScaleKernel(gpytorch.kernels.MaternKernel(nu=1.5, ard_num_dims=train_x.shape[1]))
+#         )
+
+#     def forward(self, x):
+#         mean = self.mean_module(x)
+#         covar = self.covar_module(x)
+#         return gpytorch.distributions.MultivariateNormal(mean, covar)
