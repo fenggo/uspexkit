@@ -2,7 +2,7 @@
 
 0、下载安装
 ```
-git clone https://gitee.com/fenggo/uspexkit.git
+git clone https://github.com/fenggo/uspexkit.git
 cd uspexkit
 pip install .
 ```
