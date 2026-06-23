@@ -8,11 +8,6 @@ from os.path import exists
 
 from sklearn import preprocessing
 from sklearn.gaussian_process import GaussianProcessRegressor
-# from uspexkit.gp_utils import GPyTorchRegressor
-# from sklearn.gaussian_process.kernels import (
-#     DotProduct, WhiteKernel, Matern,
-# )
-
 from sklearn.gaussian_process.kernels import (RBF,DotProduct, WhiteKernel,
                                               ConstantKernel as C,RationalQuadratic,
                                               Matern,
