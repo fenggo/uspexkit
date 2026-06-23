@@ -1,4 +1,4 @@
-"""Core commands: pred, calc, traj, zmat, fdf, sample."""
+"""Core commands: pred, calc, traj, zmat, fdf, sample, add, addall, gp."""
 import os
 import subprocess
 import pickle
