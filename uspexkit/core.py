@@ -53,10 +53,10 @@ def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
     energy  = atoms_dft.get_potential_energy()
 
     atoms = opt(atoms=atoms_dft,step=step,l=1,t=0.000001,n=ncpu, lib='reaxff_nn')              ## compute feature
-    e     = get_feature(atoms,n=n,lib='reaxff_nn')
-    e_cho = get_hbond_feature(atoms,n=n,elements='H core C core O core')
-    e_chn = get_hbond_feature(atoms,n=n,elements='H core C core N core')
-    e_chc = get_hbond_feature(atoms,n=n,elements='H core C core C core')
+    e     = get_feature(atoms,n=ncpu,lib='reaxff_nn')
+    e_cho = get_hbond_feature(atoms,n=ncpu,elements='H core C core O core')
+    e_chn = get_hbond_feature(atoms,n=ncpu,elements='H core C core N core')
+    e_chc = get_hbond_feature(atoms,n=ncpu,elements='H core C core C core')
 
     volume   = atoms.get_volume()
     density_ = masses/volume/0.602214129
