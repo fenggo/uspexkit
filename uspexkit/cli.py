@@ -95,6 +95,7 @@ def main():
  # ── add ── 
     p_add = sub.add_parser("add", help=COMMANDS["add"][1])
     p_add.add_argument("--n", type=int, default=1, help="number cpu tobe used")
+    p_add.add_argument("--s", type=int, default=1000, help="the step of mlp geometry optimization")
     p_add.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_add.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
 
