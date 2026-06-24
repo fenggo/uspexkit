@@ -70,18 +70,18 @@ def main():
 
     # ── calcdata ──
     p_calcdata = sub.add_parser("calcdata", help=COMMANDS["calcdata"][1])
-    p_calcdata.add_argument("--n", default=1, help="number cpu tobe used")
+    p_calcdata.add_argument("--n",type=int, default=1, help="number cpu tobe used")
     p_calcdata.add_argument("--t", default='structures.traj', help="Trajectory file")
     p_calcdata.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
 
    # ── gp ──  
     p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
     p_gp.add_argument("--n", type=int, default=1, help="number cpu tobe used")
-    p_gp.add_argument("--t", default=0.005, help="structure match tolerance")
-    p_gp.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
-    p_gp.add_argument("--b", default=1.5, help="energy devate the mean tolerance that the structure is broken")
-    p_gp.add_argument("--u", default=0.2, help="uncertainty of Gaussian Process")
-    p_gp.add_argument("--f", default=1, help="which feature factor to be used")
+    p_gp.add_argument("--t",type=float, default=0.005, help="structure match tolerance")
+    p_gp.add_argument("--step",type=int, default=1000, help="number of step to used to optimize by MLP")
+    p_gp.add_argument("--b",type=float, default=1.5, help="energy devate the mean tolerance that the structure is broken")
+    p_gp.add_argument("--u",type=float, default=0.2, help="uncertainty of Gaussian Process")
+    p_gp.add_argument("--f", type=int,default=1, help="which feature factor to be used")
     p_gp.add_argument("--data", default='data', help="which data to be used")
     p_gp.add_argument("--resf", default='results1', help="results file directory")
 
