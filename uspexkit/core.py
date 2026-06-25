@@ -26,7 +26,7 @@ from uspexkit.utils import (read_individuals, search_structure,generate_hbond_li
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
 # from irff.dft.dftb import dftb_opt
 from irff.dft.siesta import siesta_opt
-from irff.molecule import Molecules,enlarge, SuperCell, # moltoatoms
+from irff.molecule import Molecules,enlarge, SuperCell # moltoatoms
 
 
 ''' A work flow in combination with USPEX 
