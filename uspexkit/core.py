@@ -209,8 +209,8 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
        with open('rfr_density.pkl', 'rb') as f:
             rfr_density = pickle.load(f)
 
-    if not exists('../{:s}/gpcsp.csv'.format(resf)):
-        with open('../{:s}/gpcsp.csv'.format(resf),'w') as fd:
+    if not exists('../{:s}/gp.csv'.format(resf)):
+        with open('../{:s}/gp.csv'.format(resf),'w') as fd:
              print(',   index,          residual,        density_min,         density_rf,   density_gp,'
                 '          uncertainty,           energy_min,       eng_pred,        uncertainty_eng',file=fd)
 
@@ -221,7 +221,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     density_rf = rfr_density.predict(X_)
     # print('95% confidence interval: \n', 1.96 * std_prediction)
          
-    with open('../{:s}/gpcsp.csv'.format(resf),'a') as fd:
+    with open('../{:s}/gp.csv'.format(resf),'a') as fd:
         # id_ = fd.tell()
         print(0,',',imin,',',res[imin],',',data_[imin][-1],',',
             density_rf[0],',',mean_prediction[0],',',
