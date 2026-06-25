@@ -107,7 +107,7 @@ def main():
     p_addall.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_addall.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
  # ── supercell ── 
-    p_supercell = sub.add_parser("addall", help=COMMANDS["addall"][1])
+    p_supercell = sub.add_parser("supercell", help=COMMANDS["supercell"][1])
     p_supercell.add_argument("--x", type=int, default=1, help="X")
     p_supercell.add_argument("--y", type=int, default=1, help="Y")
     p_supercell.add_argument("--z", type=int, default=1, help="Z")
