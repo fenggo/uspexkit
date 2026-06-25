@@ -73,7 +73,7 @@ def main():
     p_calcdata = sub.add_parser("calcdata", help=COMMANDS["calcdata"][1])
     p_calcdata.add_argument("--n",type=int, default=1, help="number cpu tobe used")
     p_calcdata.add_argument("--t", default='structures.traj', help="Trajectory file")
-    p_calcdata.add_argument("--step", default=1000, help="number of step to used to optimize by MLP")
+    p_calcdata.add_argument("--step",type=int,  default=1000, help="number of step to used to optimize by MLP")
 
    # ── gp ──  
     p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
