@@ -14,7 +14,7 @@ from sklearn.gaussian_process.kernels import (RBF,DotProduct, WhiteKernel,
                                               ExpSineSquared)
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
-
+# from ase import build
 from ase.io import read
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.calculators.singlepoint import SinglePointCalculator
@@ -26,12 +26,28 @@ from uspexkit.utils import (read_individuals, search_structure,generate_hbond_li
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
 # from irff.dft.dftb import dftb_opt
 from irff.dft.siesta import siesta_opt
-from irff.molecule import Molecules,enlarge # SuperCell,moltoatoms
+from irff.molecule import Molecules,enlarge, SuperCell, # moltoatoms
 
 
 ''' A work flow in combination with USPEX 
     High-Throughput Evolutionary Crystal Structure Prediction Method
 '''
+
+def supercell(gen=None,traj=None,x=1,y=1,z=1):
+    if traj is None:
+        A = read(gen)
+        # build.make_supercell(A,[2,2,2])
+        _,atoms = SuperCell(A,fac=1.0,supercell=[args.x,args.y,args.z])
+        write(f'POSCAR.supercell_{x}_{y}_{z}',atoms)
+    else:
+        images = Trajectory(traj)
+        A = images[-1]
+        # build.make_supercell(A,[2,2,2])
+        _,atoms = SuperCell(A,fac=1.0,supercell=[x,y,z])
+        atoms.calc = SinglePointCalculator(atoms,energy=A.get_potential_energy()*x*y*z)
+        his    = TrajectoryWriter(f'{traj.split(".")[0]}_{x}{y}{z}.traj',mode='w')
+        his.write(atoms=atoms)
+        his.close()
 
 def addall(traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
     images = Trajectory(traj)

@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -16,6 +16,7 @@ COMMANDS = {
     "fixbroken": (fixbroken, "fix broken molecule"),
     "add": (add, "add a structure to data"),
     "addall": (addall, "add a structure to data"),
+    "supercell": (supercell, "build a supercell"),
 }
 
 
@@ -105,6 +106,13 @@ def main():
     p_addall.add_argument("--s", type=int, default=1000, help="the step of mlp geometry optimization")
     p_addall.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_addall.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
+ # ── supercell ── 
+    p_supercell = sub.add_parser("addall", help=COMMANDS["addall"][1])
+    p_supercell.add_argument("--x", type=int, default=1, help="X")
+    p_supercell.add_argument("--y", type=int, default=1, help="Y")
+    p_supercell.add_argument("--z", type=int, default=1, help="Z")
+    p_supercell.add_argument("--t", type=str,default=None, help="trajector file name")
+    p_supercell.add_argument("--g", type=str,default=None, help="geometry file name")
 
     args = parser.parse_args()
 
@@ -139,3 +147,7 @@ def main():
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)
     elif args.command == "addall":
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)
+    elif args.command == "supercell":
+        cmd_func(traj=args.t,gen=args.g,x=args.x,y=args.y,z=args.z)
+
+
