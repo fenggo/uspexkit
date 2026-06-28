@@ -327,7 +327,13 @@ def fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1):
         
           nmol    = len(m_)
           cell    = atoms.get_cell()
-          _,atoms = enlarge(m_,cell=cell,fac=scale,supercell=[1,1,1])
+          irun = 0
+          fac  = 1.0
+          while e_mean-e[0]>broken and irun < 15:
+                fac = fac*scale
+                _,atoms = enlarge(m_,cell=cell,fac=fac,supercell=[1,1,1])
+                atoms,e,density = get_gulp_energy(atoms, ncpu=ncpu,o=False)
+                irun += 1
     else:
        if not exists("molecule.pkl"):
           m_  = Molecules(atoms,rcut={"H-H":1.0,"H-O":1.02,"O-O":1.4,"H-N":1.22,"H-C":1.35,
@@ -342,8 +348,11 @@ def fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1):
 #  GULP energy helper
 # ──────────────────────────────────────────────
 
-def get_gulp_energy(atoms, ncpu=8):
-    atoms_opt = opt(atoms=atoms, step=1000, l=1, t=0.000001, n=ncpu, lib="reaxff_nn")
+def get_gulp_energy(atoms, ncpu=8,o=True):
+    if o:
+       atoms_opt = opt(atoms=atoms, step=1000, l=1, t=0.000001, n=ncpu, lib="reaxff_nn")
+    else:
+       atoms_opt = atoms
     write_gulp_in(atoms_opt, runword="gradient nosymmetry conv qite verb", lib="reaxff_nn")
     if ncpu == 1:
         subprocess.call("gulp<inp-gulp>out", shell=True)
