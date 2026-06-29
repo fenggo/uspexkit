@@ -230,12 +230,15 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     
   
     density_= mean_prediction[0] # data_[ind[0][im],-1]
-    if density_>np.max(y)*1.1 and (density_/density>1.5 or  density/density_>1.5):
+    if ((density_>np.max(y)*1.1 and (density_/density>1.5 or  density/density_>1.5)) or 
+        (density_>np.max(y) and res[imin]>10) ):
        if density_rf[0]/density>1.5 or  density/density_rf[0]>1.5:
           density_ = density*d_scaler
        else:
           density_ = density_rf[0]
+
  
+
     energy  = -density_ # mean_eng_pred[0]
     write_output(e=energy)
     write_geometry(atoms=atoms)
