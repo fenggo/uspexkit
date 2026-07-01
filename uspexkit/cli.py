@@ -74,6 +74,7 @@ def main():
     p_calcdata.add_argument("--n",type=int, default=1, help="number cpu tobe used")
     p_calcdata.add_argument("--t", default='structures.traj', help="Trajectory file")
     p_calcdata.add_argument("--step",type=int,  default=1000, help="number of step to used to optimize by MLP")
+    p_calcdata.add_argument("--c",type=str, default='nn', help="the calculator to be used, aviliable: nn, mtp")
 
    # ── gp ──  
     p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
@@ -138,7 +139,7 @@ def main():
     elif args.command == "sample":
         cmd_func(ind=args.ind, t=args.t)
     elif args.command == "calcdata":
-        cmd_func(traj=args.t, step=args.step,n=args.n)
+        cmd_func(traj=args.t, step=args.step,n=args.n,c=args.c)
     elif args.command == "gp":
         cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,dat=args.data,resf=args.resf)
     elif args.command == "fixbroken":
