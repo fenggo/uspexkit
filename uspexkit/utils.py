@@ -253,7 +253,7 @@ def lammps_opt_mtp(atoms,n=4,step=5000,lib='pot.almtp',T=5.0,P=0.0,tdump=100):
               species=specorder,
               pair_style = pair_style,  # without lg set lgvdw no
               pair_coeff = pair_coeff,
-              fix = 'fix   1 all npt temp {:f} {:f} {:d} iso {:f} {:f} {:d}'.format(T,T,tdump,p,p,tdump),
+              fix = 'fix   1 all npt temp {:f} {:f} {:d} iso {:f} {:f} {:d}'.format(T,T,tdump,P,P,tdump),
               fix_modify = ' ',
               # minimize   = '1e-5 1e-5 2000 2000',
               thermo_style ='thermo_style  custom step temp epair etotal press vol cella cellb cellc cellalpha cellbeta cellgamma pxx pyy pzz pxy pxz pyz',
