@@ -21,6 +21,7 @@ from ase.calculators.singlepoint import SinglePointCalculator
 from irff.md.gulp import opt,get_reax_energy,write_gulp_in
 from uspexkit.utils import (read_individuals, search_structure,generate_hbond_lib,
                             write_input,run_gulp, # add_structure,
+                            lammps_opt_mtp,
                             write_output,write_geometry)
 # from irff.md.lammps import writeLammpsData,writeLammpsIn,get_lammps_thermal,lammpstraj_to_ase
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
@@ -244,7 +245,8 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     write_geometry(atoms=atoms)
     
 
-def calcdata(traj='structures.traj',n=8,step=1000):
+def calcdata(traj='structures.traj',n=8,c='nn',step=1000):
+    ''' c: calculator, which mathine learning potential to be used '''
     images      = Trajectory(traj)
     traj_       = TrajectoryWriter('structures_mlp.traj',mode='w')
 
@@ -258,8 +260,12 @@ def calcdata(traj='structures.traj',n=8,step=1000):
         volume = atoms.get_volume()
         density_ = masses/volume/0.602214129
         energy = atoms.get_potential_energy()
-        
-        atoms = opt(atoms=atoms,step=step,l=1,t=0.000001,n=n, lib='reaxff_nn')
+        if c=='nn':
+           atoms = opt(atoms=atoms,step=step,l=1,t=0.000001,n=n, lib='reaxff_nn')
+        elif c=='mtp':
+           atoms = lammps_opt_mtp(atoms=atoms,step=step,n=n,lib='pot.almtp')
+        else:
+           raise RuntimeError("Caluclator not supported!") 
         e     = get_feature(atoms,n=n,lib='reaxff_nn')
         e_cho = get_hbond_feature(atoms,n=n,elements='H core C core O core')
         e_chn = get_hbond_feature(atoms,n=n,elements='H core C core N core')
@@ -758,6 +764,4 @@ def sample(ind="", t=None):
                 traj_w.write(atoms=atoms)
 
     traj_w.close()
-
-
 
