@@ -261,9 +261,9 @@ def lammps_opt_mtp(atoms,n=4,step=5000,lib='pot.almtp',T=5.0,P=0.0,tdump=100):
               restartfile='restart')
     print('\n-  running lammps minimize ...')
     if n==1:
-       system('lammps<in.lammps>out')
+       subprocess.call('lammps<in.lammps>out',shell=True)
     else:
-       system('mpirun -n {:d} lammps -i in.lammps>out'.format(n))
+       subprocess.call('mpirun -n {:d} lammps -i in.lammps>out'.format(n),shell=True)
     atoms = lammpstraj_to_ase('lammps.trj',inp='in.lammps',units=units)
    #  line = subprocess.check_output('grep \"Total Energy:\" lmp.log',shell=True)
    
@@ -286,9 +286,9 @@ def lammps_opt_mtp(atoms,n=4,step=5000,lib='pot.almtp',T=5.0,P=0.0,tdump=100):
               restartfile='restart')
     print('\n-  running lammps minimize ...')
     if n==1:
-       system('lammps<in.lammps>out')
+       subprocess.call('lammps<in.lammps>out',shell=True)
     else:
-       system('mpirun -n {:d} lammps -i in.lammps>out'.format(n))
+       subprocess.call('mpirun -n {:d} lammps -i in.lammps>out'.format(n),shell=True)
     atoms = lammpstraj_to_ase('lammps.trj',inp='in.lammps',units=units)
     return atoms
     
