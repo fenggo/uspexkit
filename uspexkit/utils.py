@@ -7,6 +7,7 @@ import subprocess
 import numpy as np
 from ase.io.trajectory import TrajectoryWriter
 from irff.md.gulp import write_gulp_in
+from irff.md.lammps import writeLammpsData,writeLammpsIn,lammpstraj_to_ase
 
 
 class Stack:
@@ -234,7 +235,63 @@ def optimize(atoms,calc=2,ncpu=8,step=1000):
       print('calculator not supported!')
       raise SystemExit(1)
    return atoms 
-
+    
+def lammps_opt_mtp(atoms,n=4,step=5000,lib='pot.almtp',T=5.0,P=0.0,tdump=100):
+    pair_style = 'mlip load_from={:s}'.format(lib)
+    pair_coeff = '* * # C O N H'
+    units      = "metal"
+    atom_style = 'atomic'
+    specorder  = ['C','O','N','H']
+    #############  run npt ##################
+    writeLammpsData(atoms,data='data.lammps',specorder=specorder,
+                    masses={'Al':26.9820,'C':12.0000,'H':1.0080,'O':15.9990,
+                             'N':14.0000,'F':18.9980},
+                    force_skew=False,
+                    velocities=False,units=units,atom_style=atom_style)
+    writeLammpsIn(log='lmp.log',timestep=1.0,total=10000,restart=None,
+              dump_interval=10,
+              species=specorder,
+              pair_style = pair_style,  # without lg set lgvdw no
+              pair_coeff = pair_coeff,
+              fix = 'fix   1 all npt temp {:f} {:f} {:d} iso {:f} {:f} {:d}'.format(T,T,tdump,p,p,tdump),
+              fix_modify = ' ',
+              # minimize   = '1e-5 1e-5 2000 2000',
+              thermo_style ='thermo_style  custom step temp epair etotal press vol cella cellb cellc cellalpha cellbeta cellgamma pxx pyy pzz pxy pxz pyz',
+              data='data.lammps',units=units,atom_style=atom_style,
+              restartfile='restart')
+    print('\n-  running lammps minimize ...')
+    if n==1:
+       system('lammps<in.lammps>out')
+    else:
+       system('mpirun -n {:d} lammps -i in.lammps>out'.format(n))
+    atoms = lammpstraj_to_ase('lammps.trj',inp='in.lammps',units=units)
+   #  line = subprocess.check_output('grep \"Total Energy:\" lmp.log',shell=True)
+   
+   #############  run minimize ##################
+    writeLammpsData(atoms,data='data.lammps',specorder=specorder,
+                    masses={'Al':26.9820,'C':12.0000,'H':1.0080,'O':15.9990,
+                             'N':14.0000,'F':18.9980},
+                    force_skew=False,
+                    velocities=False,units=units,atom_style=atom_style)
+    writeLammpsIn(log='lmp.log',timestep=0.1,total=3000,restart=None,
+              dump_interval=10,
+              species=specorder,
+              pair_style = pair_style,  # without lg set lgvdw no
+              pair_coeff = pair_coeff,
+              fix = ' ',
+              fix_modify = ' ',
+              minimize   = '1e-5 1e-5 3000 3000',
+              thermo_style ='thermo_style  custom step temp epair etotal press vol cella cellb cellc cellalpha cellbeta cellgamma pxx pyy pzz pxy pxz pyz',
+              data='data.lammps',units=units,atom_style=atom_style,
+              restartfile='restart')
+    print('\n-  running lammps minimize ...')
+    if n==1:
+       system('lammps<in.lammps>out')
+    else:
+       system('mpirun -n {:d} lammps -i in.lammps>out'.format(n))
+    atoms = lammpstraj_to_ase('lammps.trj',inp='in.lammps',units=units)
+    return atoms
+    
 # def add_structure(i,atomes_dft,atoms_mlp,feature=None,data=None):
 #     with TrajectoryWriter('../{:s}/structures_mlp.traj'.format(data),mode='a') as traj:
 #          traj.write(atoms=atoms_mlp)
