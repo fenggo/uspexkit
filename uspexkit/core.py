@@ -412,12 +412,10 @@ def load_gaussian_process(X, y, y_eng):
 
     return gpr_energy, gpr_density
 
-
-def load_mlp(X, y):
-    mlp = MLPRegressor((16, 8), max_iter=20000)
-    mlp.fit(X, y)
-    return mlp
-
+# def load_mlp(X, y):
+#     mlp = MLPRegressor((16, 8), max_iter=20000)
+#     mlp.fit(X, y)
+#     return mlp
 
 def load_rfr(X, y):
     rfr = RandomForestRegressor(random_state=37, n_estimators=300,
@@ -506,7 +504,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
 
         gpr_energy, gpr_density = load_gaussian_process(X, y, y_eng)
         rfr = load_rfr(X, y)
-        mlp = load_mlp(X, y)
+        # mlp = load_mlp(X, y)
 
         X_ = scaler.transform(np.expand_dims(feature, axis=0))
         density_pred, std_den_pred = gpr_density.predict(X_, return_std=True)
@@ -516,14 +514,14 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         std_den_pred = std_den_pred[0]
         std_eng_pred = std_eng_pred[0]
         density_rf   = rfr.predict(X_)[0]
-        density_mlp  = mlp.predict(X_)[0]
+        # density_mlp  = mlp.predict(X_)[0]
 
         if f == 1:
-            print(f"{s:5d} rf: {density_rf:9.4f} mlp: {density_mlp:9.4f} "
+            print(f"{s:5d} rf: {density_rf:9.4f} "
                   f"{feature[4]:9.4f} {feature[5]:9.4f} {feature[6]:9.4f} {feature[7]:9.4f} "
                   f"gp: {density_pred:7.4f} uncert: {std_den_pred:7.4f}")
         else:
-            print(f"{s:5d} rf: {density_rf:9.4f} mlp: {density_mlp:9.4f} "
+            print(f"{s:5d} rf: {density_rf:9.4f} "
                   f"{feature[3]:9.4f} {feature[4]:9.4f} {feature[5]:9.4f} {feature[6]:9.4f} "
                   f"gp: {density_pred:7.4f} uncert: {std_den_pred:7.4f}")
 
