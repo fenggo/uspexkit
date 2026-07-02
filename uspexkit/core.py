@@ -470,10 +470,10 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         chdir(data_dir)
         if c=='nn':
            # atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
-           atoms_mlp = opt(atoms=atoms,step=step,l=1,t=0.000001,n=n, lib='reaxff_nn')
+           atoms_mlp = opt(atoms=atoms,step=step,l=1,t=0.000001,n=ncpu, lib='reaxff_nn')
         elif c=='mtp':
            # atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
-           atoms_mlp = lammps_opt_mtp(atoms=atoms,step=step,n=n,lib='pot.almtp')
+           atoms_mlp = lammps_opt_mtp(atoms=atoms,step=step,n=ncpu,lib='pot.almtp')
         else:
            raise RuntimeError("Caluclator not supported!") 
 
