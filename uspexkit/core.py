@@ -142,7 +142,6 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     else:
        feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
  
-
     data   = np.loadtxt('../{:s}/feature_mlp.csv'.format(dat),delimiter=',',skiprows=1)  ## get crystal feature data
     data_  = np.loadtxt('../{:s}/feature.csv'.format(dat),delimiter=',',skiprows=1)      ## get crystal feature data
     images = Trajectory('../{:s}/structures.traj'.format(dat))
@@ -229,7 +228,6 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
             1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
             file=fd)
     
-  
     density_= mean_prediction[0] # data_[ind[0][im],-1]
     if ((density_>np.max(y)*1.1 and (density_/density>1.5 or  density/density_>1.5)) or 
         (density_>np.max(y) and res[imin]>10) ):
@@ -237,8 +235,6 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
           density_ = density*d_scaler
        else:
           density_ = density_rf[0]
-
- 
 
     energy  = -density_ # mean_eng_pred[0]
     write_output(e=energy)
@@ -429,13 +425,12 @@ def load_rfr(X, y):
     rfr.fit(X, y)
     return rfr
 
-
 # ──────────────────────────────────────────────
 #  pred — 高斯过程预测
 # ──────────────────────────────────────────────
 
 def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
-         step=300, ncpu=8, dat="data", tolerance=0.001):
+         c='nn',step=300, ncpu=8, dat="data", tolerance=0.001):
     """
     Predict density and energy using Gaussian Process + MLP + RandomForest.
 
@@ -465,6 +460,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         with open("density_predict.log", "w") as fd:
             print("# Crystal_id Density_mlp Density_rf Density_gp Energy std_den std_eng", file=fd)
 
+    masses = np.sum(images[0].get_masses())
     for s in ids_list:
         dir_list = root_dir.split("/")
         rootdir = "/".join(dir_list[:-1])
@@ -472,11 +468,21 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         atoms = images[s - 1]
 
         chdir(data_dir)
-        atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
+        if c=='nn':
+           # atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
+           atoms_mlp = opt(atoms=atoms,step=step,l=1,t=0.000001,n=n, lib='reaxff_nn')
+        elif c=='mtp':
+           # atoms_mlp, e, density = get_gulp_energy(atoms, ncpu=ncpu)
+           atoms_mlp = lammps_opt_mtp(atoms=atoms,step=step,n=n,lib='pot.almtp')
+        else:
+           raise RuntimeError("Caluclator not supported!") 
 
-        e_cho = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core O core')
-        e_chn = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core N core')
-        e_chc = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core C core')
+        volume  = atoms_mlp.get_volume()
+        density = masses / volume / 0.602214129
+        e       = get_feature(atoms,n=n,lib='reaxff_nn')
+        e_cho   = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core O core')
+        e_chn   = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core N core')
+        e_chc   = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core C core')
         
         # if f == 1:
         feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
