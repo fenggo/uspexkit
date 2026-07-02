@@ -38,6 +38,7 @@ def main():
     p_pred.add_argument("--ncpu", type=int, default=8, help="Number of CPUs")
     p_pred.add_argument("--dat", default="data", help="Data directory name")
     p_pred.add_argument("--tolerance", type=float, default=0.001, help="Structure matching tolerance")
+    p_pred.add_argument("--c",type=str, default='nn', help="the calculator to be used, aviliable: nn, mtp")
 
     # ── calc ──
     p_calc = sub.add_parser("calc", help=COMMANDS["calc"][1])
@@ -126,7 +127,7 @@ def main():
     # Map args to function kwargs
     if args.command == "pred":
         cmd_func(t=args.t, g=args.g, f=args.f, den=args.den, ids=args.ids,
-                 step=args.step, ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance)
+                 c=args.c,step=args.step, ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance)
     elif args.command == "calc":
         cmd_func(t=args.t, den=args.den, ids=args.ids, step=args.step,
                  ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance)
