@@ -527,7 +527,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
 
         chdir(root_dir)
         with open("density_predict.log", "a") as fd:
-            print(f"{s:5d} {density_mlp:9.6f} {density_rf:9.6f} "
+            print(f"{s:5d} {density_rf:9.6f} "
                   f"{density_pred:9.6f} {energy_pred:10.6f} "
                   f"{std_den_pred:9.6f} {std_eng_pred:9.6f}", file=fd)
 
