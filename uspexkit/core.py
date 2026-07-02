@@ -479,7 +479,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
 
         volume  = atoms_mlp.get_volume()
         density = masses / volume / 0.602214129
-        e       = get_feature(atoms,n=n,lib='reaxff_nn')
+        e       = get_feature(atoms,n=ncpu,lib='reaxff_nn')
         e_cho   = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core O core')
         e_chn   = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core N core')
         e_chc   = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core C core')
