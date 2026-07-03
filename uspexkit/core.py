@@ -453,6 +453,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
     print(g)
     if g is None:
        ids_list = [1]
+       print('I am here')
     elif not ids:
         ids_list = []
         res = read_individuals()  # g
