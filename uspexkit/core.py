@@ -444,8 +444,15 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         dat: data directory name
         tolerance: structure matching tolerance
     """
-    images = Trajectory(t)
-    if not ids:
+    if g is not None:
+       atoms  = read(g)
+       images = [atoms]
+    else:
+       images = Trajectory(t)
+
+    if g is None:
+       ids_list = [1]
+    elif not ids:
         ids_list = []
         res = read_individuals(g)
         for i, e, d, _f in res:
@@ -517,14 +524,14 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         density_rf   = rfr.predict(X_)[0]
         # density_mlp  = mlp.predict(X_)[0]
 
-        if f == 1:
-            print(f"{s:5d} rf: {density_rf:9.4f} "
-                  f"{feature[4]:9.4f} {feature[5]:9.4f} {feature[6]:9.4f} {feature[7]:9.4f} "
-                  f"gp: {density_pred:7.4f} uncert: {std_den_pred:7.4f}")
-        else:
-            print(f"{s:5d} rf: {density_rf:9.4f} "
-                  f"{feature[3]:9.4f} {feature[4]:9.4f} {feature[5]:9.4f} {feature[6]:9.4f} "
-                  f"gp: {density_pred:7.4f} uncert: {std_den_pred:7.4f}")
+        # if f == 1:
+        print(f"{s:5d} rf: {density_rf:7.4f} "
+              f"gp(eng): {energy_pred:7.4f} uncert: {std_eng_pred:7.4f}"
+              f"gp(den): {density_pred:7.4f} uncert: {std_den_pred:7.4f}")
+        # else:
+        #     print(f"{s:5d} rf: {density_rf:9.4f} "
+        #           f"{feature[3]:9.4f} {feature[4]:9.4f} {feature[5]:9.4f} {feature[6]:9.4f} "
+        #           f"gp: {density_pred:7.4f} uncert: {std_den_pred:7.4f}")
 
         chdir(root_dir)
         with open("density_predict.log", "a") as fd:
