@@ -450,10 +450,8 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
     else:
        images = Trajectory(t)
     
-    print(g)
-    if g is None:
+    if g is not None:
        ids_list = [1]
-       print('I am here')
     elif not ids:
         ids_list = []
         res = read_individuals()  # g
@@ -468,7 +466,6 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         with open("density_predict.log", "w") as fd:
             print("# Crystal_id Density_mlp Density_rf Density_gp Energy std_den std_eng", file=fd)
 
-    print(ids_list)
     masses = np.sum(images[0].get_masses())
     for s in ids_list:
         dir_list = root_dir.split("/")
