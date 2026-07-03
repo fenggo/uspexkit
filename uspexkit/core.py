@@ -471,7 +471,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         dir_list = root_dir.split("/")
         rootdir = "/".join(dir_list[:-1])
         data_dir = f"{rootdir}/{dat}"
-        print(images)
+        print(images,s)
         atoms = images[s - 1]
 
         chdir(data_dir)
