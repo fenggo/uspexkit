@@ -465,13 +465,14 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
     if not exists("density_predict.log"):
         with open("density_predict.log", "w") as fd:
             print("# Crystal_id Density_mlp Density_rf Density_gp Energy std_den std_eng", file=fd)
-
+            
+    print(ids_list)
     masses = np.sum(images[0].get_masses())
     for s in ids_list:
         dir_list = root_dir.split("/")
         rootdir = "/".join(dir_list[:-1])
         data_dir = f"{rootdir}/{dat}"
-        print(images,s)
+        # print(images,s)
         atoms = images[s - 1]
 
         chdir(data_dir)
