@@ -419,9 +419,15 @@ def load_gaussian_process(X, y, y_eng):
 #     return mlp
 
 def load_rfr(X, y):
-    rfr = RandomForestRegressor(random_state=37, n_estimators=300,
+    if not exists("rfr.pkl"):
+       rfr = RandomForestRegressor(random_state=37, n_estimators=300,
                                 min_weight_fraction_leaf=0.0, oob_score=True)
-    rfr.fit(X, y)
+       rfr.fit(X, y)
+       with open("rfr.pkl", "wb") as f:
+            pickle.dump(rfr, f)
+    else:
+       with open("rfr.pkl", "rb") as f:
+            rfr = pickle.load(f)
     return rfr
 
 # ──────────────────────────────────────────────
