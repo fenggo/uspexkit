@@ -470,7 +470,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
     root_dir = getcwd()
     if not exists("density_predict.log"):
         with open("density_predict.log", "w") as fd:
-            print("# Crystal_id Density_mlp Density_rf Density_gp Energy std_den std_eng", file=fd)
+            print("# Crystal_id Residual Density_mlp Density_rf Density_gp std_den Energy std_eng", file=fd)
 
     masses = np.sum(images[0].get_masses())
     for s in ids_list:
@@ -532,9 +532,9 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         # density_mlp  = mlp.predict(X_)[0]
 
         # if f == 1:
-        print(f"{s:5d} res: {res_}"
-              f"rf: {density_rf:7.4f} "
-              f"gp(den): {density_pred:7.4f} uncert: {std_den_pred:7.4f} "
+        print(f"{s:5d} res: {res_}  "
+              f"rf: {density_rf:7.4f}  "
+              f"gp(den): {density_pred:7.4f} uncert: {std_den_pred:7.4f}  "
               f"gp(eng): {energy_pred:7.4f} uncert: {std_eng_pred:7.4f}" )
         # else:
         #     print(f"{s:5d} rf: {density_rf:9.4f} "
@@ -544,6 +544,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,
         chdir(root_dir)
         with open("density_predict.log", "a") as fd:
              print(f"{s:5d} {res_} "
+                   f"{density:7.4f} "
                    f"{density_rf:7.4f} "
                    f"{density_pred:7.4f} {std_den_pred:7.4f}"
                    f"{energy_pred:7.4f} {std_eng_pred:7.4f} " ,file=fd)
