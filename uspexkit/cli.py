@@ -30,7 +30,7 @@ def main():
     # ── pred ──
     p_pred = sub.add_parser("pred", help=COMMANDS["pred"][1])
     p_pred.add_argument("--t", default="Individuals.traj", help="Trajectory file")
-    p_pred.add_argument("--g", type=int, default=None, help="Generation number")
+    p_pred.add_argument("--g", type=str, default=None, help="geometry structure")
     p_pred.add_argument("--f", type=int, default=1, help="Feature flag (1=8D)")
     p_pred.add_argument("--den", type=float, default=1.88, help="Density threshold")
     p_pred.add_argument("--ids", default=None, help="Crystal indices (space-separated)")
