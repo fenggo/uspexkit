@@ -32,6 +32,7 @@ def main():
     p_pred.add_argument("--t", default="Individuals.traj", help="Trajectory file")
     p_pred.add_argument("--g", type=str, default=None, help="geometry structure")
     p_pred.add_argument("--f", type=int, default=1, help="Feature flag (1=8D)")
+    p_pred.add_argument("--x", type=int, default=-1, help="index")
     p_pred.add_argument("--den", type=float, default=1.88, help="Density threshold")
     p_pred.add_argument("--ids", default=None, help="Crystal indices (space-separated)")
     p_pred.add_argument("--step", type=int, default=300, help="Optimization steps")
@@ -126,7 +127,7 @@ def main():
 
     # Map args to function kwargs
     if args.command == "pred":
-        cmd_func(t=args.t, g=args.g, f=args.f, den=args.den, ids=args.ids,
+        cmd_func(t=args.t, g=args.g, f=args.f, den=args.den, ids=args.ids,x=args.x,
                  c=args.c,step=args.step, ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance)
     elif args.command == "calc":
         cmd_func(t=args.t, den=args.den, ids=args.ids, step=args.step,
