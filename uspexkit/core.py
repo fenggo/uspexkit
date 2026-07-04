@@ -434,7 +434,7 @@ def load_rfr(X, y):
 #  pred — 高斯过程预测
 # ──────────────────────────────────────────────
 
-def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,x=-1
+def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,x=-1,
          c='nn',step=300, ncpu=8, dat="data", tolerance=0.001):
     """
     Predict density and energy using Gaussian Process + MLP + RandomForest.
