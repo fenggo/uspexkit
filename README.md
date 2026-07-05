@@ -11,7 +11,9 @@ pip install .
 ```
 uspexkit traj
 ```
-将结果文件转换为ASE轨迹.traj文件。 2、calc
+将结果文件转换为ASE轨迹.traj文件。 
+
+2、calc
 ```
 uspexkit calc --n=24   # 进行高通量筛选及DFT软件计算
 ```
