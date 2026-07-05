@@ -546,7 +546,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,x=-1,
              print(f"{s:5d} {res_} "
                    f"{density:7.4f} "
                    f"{density_rf:7.4f} "
-                   f"{density_pred:7.4f} {std_den_pred:7.4f}"
+                   f"{density_pred:7.4f} {std_den_pred:7.4f} "
                    f"{energy_pred:7.4f} {std_eng_pred:7.4f} " ,file=fd)
 
 # ──────────────────────────────────────────────
