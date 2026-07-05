@@ -7,7 +7,6 @@ cd uspexkit
 pip install .
 ```
 
-
 1、traj
 ```
 uspexkit traj
@@ -20,7 +19,15 @@ uspexkit calc --n=24   # 进行高通量筛选及DFT软件计算
 ```
 uspexkit zmat  --g=POSCAR
 ```
-4、查看所有命令
+
+4、预测某个结构的能量
+```
+uspexkit pred --n=24 --i='214 215' --dat=data*
+#或者
+uspexkit pred  --g=POSCAR --n=24 --dat=data*
+```
+
+5、查看所有命令
 ```
 uspexkit --help 
 #or
