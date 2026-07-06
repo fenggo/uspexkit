@@ -56,9 +56,9 @@ def addall(traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
         add(atoms_dft,step=step,tolerance=tolerance,ncpu=ncpu)
  
 
-def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
+def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncpu=1):
     if atoms_dft is None:
-       atoms_dft = read(traj,-1)
+       atoms_dft = read(traj,i)
     masses  = np.sum(atoms_dft.get_masses())
     volume  = atoms_dft.get_volume()
     density = masses/volume/0.602214129
