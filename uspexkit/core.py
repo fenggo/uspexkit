@@ -731,7 +731,7 @@ def update(traj,inde=None,step=1000,tolerance=0.01,ncpu=1):
               print(i,',',energy,',',d[1],',',d[2],',',d[3],',',d[4],',',d[5],',',d[4],',',d[7],',',d[8],',',density,file=fd)  
               traj.write(atoms=atoms_dft)
            else:  
-              print(i,',',d[0],',',d[1],',',d[2],',',d[3],',',d[4],',',d[5],',',d[6],',',d[7],',',d[8],',',d[9]file=fd)  
+              print(i,',',d[0],',',d[1],',',d[2],',',d[3],',',d[4],',',d[5],',',d[6],',',d[7],',',d[8],',',d[9],file=fd)  
               traj.write(atoms=images[i])
     else:
        print(f'Specified structure not found in database!') 
