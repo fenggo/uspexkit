@@ -553,7 +553,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,x=-1,
 #  calc — DFT 高通量计算
 # ──────────────────────────────────────────────
 
-def calc(t="Individuals.traj", den=1.88, ids=None, step=300,
+def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
          ncpu=8, dat="data", tolerance=0.01):
     """
     High-throughput DFT calculation with structure matching.
