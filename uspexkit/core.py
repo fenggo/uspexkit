@@ -76,7 +76,7 @@ def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncp
     data = np.loadtxt('feature_mlp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
     data_= np.loadtxt('feature.csv',delimiter=',',skiprows=1)          ## get crystal feature data
     d    = data[:,1:]         # 去掉索引
-    i    = int(data[-1][0])   # 获取索引
+    i    = int(data[-1][0])+1   # 获取索引
     # print(cry)
     feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density_])
     res  = np.sum(np.square(d - feature),axis=1)
