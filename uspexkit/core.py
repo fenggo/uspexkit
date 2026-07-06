@@ -683,6 +683,63 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
             print(f"{s:5d} {density:10.6f} {energy:10.8f}", file=fd)
 
 # ──────────────────────────────────────────────
+#  update structure
+# ──────────────────────────────────────────────
+
+def update(traj,inde=None,step=1000,tolerance=0.01,ncpu=1):
+    atoms_dft = read(traj,-1)
+    subprocess.call('cp structures.traj structures.backup.traj',shell=True)
+    subprocess.call('cp feature.csv feature.backup.csv',shell=True)
+    subprocess.call('cp feature_mlp.csv feature_mlp.backup.csv',shell=True)
+    masses  = np.sum(atoms_dft.get_masses())
+    volume  = atoms_dft.get_volume()
+    density = masses/volume/0.602214129
+    energy  = atoms_dft.get_potential_energy()
+
+    atoms = opt(atoms=atoms_dft,step=step,l=1,t=0.000001,n=ncpu, lib='reaxff_nn')              ## compute feature
+    e     = get_feature(atoms,n=ncpu,lib='reaxff_nn')
+    e_cho = get_hbond_feature(atoms,n=ncpu,elements='H core C core O core')
+    e_chn = get_hbond_feature(atoms,n=ncpu,elements='H core C core N core')
+    e_chc = get_hbond_feature(atoms,n=ncpu,elements='H core C core C core')
+    
+    volume   = atoms_dft.get_volume()
+    density_ = masses/volume/0.602214129
+    
+    data = np.loadtxt('feature_mlp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
+    data_= np.loadtxt('feature.csv',delimiter=',',skiprows=1)          ## get crystal feature data
+    d    = data[:,1:]         # 去掉索引
+    d_   = data_[:,1:]   
+     
+    images     = Trajectory('structures.backup.traj')
+    # images_  = Trajectory('structures_mlp.traj')
+    feature = np.array([e[0], e[1], e[5], e[8], e[10], e_cho[11], e_chn[11], e_chc[11],e[12], density])
+
+    res  = np.sum(np.square(d - feature),axis=1)
+    ind  = np.where(res<tolerance)
+    if inde is None:
+       ind_ = ind[0]
+    else:
+       ind_ = [inde]
+
+    if len(ind_)>0:
+       traj  = TrajectoryWriter('structures.traj',mode='w')
+       fd    = open('feature.csv','w') 
+       print(', etot, eang, etor, evdw, ehb, ecoul, density',file=fd)
+       for i,d in enumerate(d_):
+           if i in ind_:
+              print(i,data_[i][1],energy,data_[i][7],density)
+              print(i,',',energy,',',d[1],',',d[2],',',d[3],',',d[4],',',d[5],',',d[4],',',d[7],',',d[8],',',density,file=fd)  
+              traj.write(atoms=atoms_dft)
+           else:  
+              print(i,',',d[0],',',d[1],',',d[2],',',d[3],',',d[4],',',d[5],',',d[6],',',d[7],',',d[8],',',d[9]file=fd)  
+              traj.write(atoms=images[i])
+    else:
+       print(f'Specified structure not found in database!') 
+       print(f'energy: {energy}')
+    fd.close()
+    traj.close()
+
+# ──────────────────────────────────────────────
 #  traj — POSCAR to trajectory
 # ──────────────────────────────────────────────
 
