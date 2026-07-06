@@ -100,6 +100,7 @@ def main():
     p_add = sub.add_parser("add", help=COMMANDS["add"][1])
     p_add.add_argument("--n", type=int, default=1, help="number cpu tobe used")
     p_add.add_argument("--s", type=int, default=1000, help="the step of mlp geometry optimization")
+    p_add.add_argument("--i", type=int, default=-1, help="the index of the Atoms object in trajectory")
     p_add.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_add.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
 
@@ -147,7 +148,7 @@ def main():
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
     elif args.command == "add":
-        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)
+        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,i=args.i,ncpu=args.n)
     elif args.command == "addall":
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)
     elif args.command == "supercell":
