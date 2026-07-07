@@ -686,7 +686,7 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
 #  update structure
 # ──────────────────────────────────────────────
 
-def update(traj,inde=None,step=1000,tolerance=0.01,ncpu=1):
+def update(traj,inde=None,step=1000,tolerance=0.005,ncpu=1):
     atoms_dft = read(traj,-1)
     subprocess.call('cp structures.traj structures.backup.traj',shell=True)
     subprocess.call('cp feature.csv feature.backup.csv',shell=True)
