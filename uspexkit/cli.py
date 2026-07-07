@@ -17,7 +17,7 @@ COMMANDS = {
     "add": (add, "add a structure to data"),
     "addall": (addall, "add a structure to data"),
     "supercell": (supercell, "build a supercell"),
-    "update": (add, "update a structure to data"),
+    "update": (update, "update a structure to data"),
 }
 
 
