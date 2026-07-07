@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -17,6 +17,7 @@ COMMANDS = {
     "add": (add, "add a structure to data"),
     "addall": (addall, "add a structure to data"),
     "supercell": (supercell, "build a supercell"),
+    "update": (add, "update a structure to data"),
 }
 
 
@@ -103,7 +104,13 @@ def main():
     p_add.add_argument("--i", type=int, default=-1, help="the index of the Atoms object in trajectory")
     p_add.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_add.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
-
+ # ── update ── 
+    p_update = sub.add_parser("update", help=COMMANDS["update"][1])
+    p_update.add_argument("--n", type=int, default=1, help="number cpu tobe used")
+    p_update.add_argument("--s", type=int, default=1000, help="the step of mlp geometry optimization")
+    p_update.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
+    p_update.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
+    p_update.add_argument("--i", default=None, help="Crystal indices (space-separated)")
  # ── addall ── 
     p_addall = sub.add_parser("addall", help=COMMANDS["addall"][1])
     p_addall.add_argument("--n", type=int, default=1, help="number cpu tobe used")
@@ -153,5 +160,6 @@ def main():
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)
     elif args.command == "supercell":
         cmd_func(traj=args.t,gen=args.g,x=args.x,y=args.y,z=args.z)
-
+    elif args.command == "update":
+        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,inde=args.i,ncpu=args.n)
 
