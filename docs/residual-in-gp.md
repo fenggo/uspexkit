@@ -13,9 +13,7 @@ imin   = np.argmin(res)                            # index of the nearest neighb
 
 Mathematically:
 $$
-\[
 \text{residual} = \min_{j} \sum_{i=1}^{10} \left( f_i - f_i^{(j)} \right)^2
-\]
 $$
 ---
 
