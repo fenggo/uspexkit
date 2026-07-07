@@ -722,22 +722,23 @@ def update(traj,inde=None,step=1000,tolerance=0.005,ncpu=1):
        ind_ = [inde]
 
     if len(ind_)>0:
-       traj  = TrajectoryWriter('structures.traj',mode='w')
+       his  = TrajectoryWriter('structures.traj',mode='w')
        fd    = open('feature.csv','w') 
        print(', etot, eang, etor, evdw, ehb, ecoul, density',file=fd)
        for i,d in enumerate(d_):
            if i in ind_:
               print(i,data_[i][1],energy,data_[i][7],density)
               print(i,',',energy,',',d[1],',',d[2],',',d[3],',',d[4],',',d[5],',',d[4],',',d[7],',',d[8],',',density,file=fd)  
-              traj.write(atoms=atoms_dft)
+              his.write(atoms=atoms_dft)
            else:  
               print(i,',',d[0],',',d[1],',',d[2],',',d[3],',',d[4],',',d[5],',',d[6],',',d[7],',',d[8],',',d[9],file=fd)  
-              traj.write(atoms=images[i])
+              his.write(atoms=images[i])
        fd.close()
+       his.close()
     else:
        print(f'Specified structure not found in database!') 
        print(f'energy: {energy}')
-    traj.close()
+    
 
 # ──────────────────────────────────────────────
 #  traj — POSCAR to trajectory
