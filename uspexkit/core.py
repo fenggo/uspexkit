@@ -630,10 +630,10 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
             struc[imin].write(f"POSCAR.{s}_opt")
             if D.ndim == 2:
                 energy = D_[imin, 0]
-                density = D_[imin, 7]
+                density = D_[imin, -1]
             else:
                 energy = D_[0]
-                density = D_[7]
+                density = D_[-1]
             print(f"{s:5d} mt {energy:9.4f} {feature[1]:9.4f} {feature[2]:9.4f} "
                   f"{feature[3]:9.4f} {feature[4]:9.4f} {feature[5]:9.4f} "
                   f"{feature[6]:9.4f} {density:7.4f} {res_:7.4f}")
