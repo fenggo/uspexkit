@@ -50,11 +50,12 @@ def supercell(gen=None,traj=None,x=1,y=1,z=1):
         his.write(atoms=atoms)
         his.close()
 
+
 def addall(traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
     images = Trajectory(traj)
     for atoms_dft in images:
         add(atoms_dft,step=step,tolerance=tolerance,ncpu=ncpu)
- 
+
 
 def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncpu=1):
     if atoms_dft is None:
@@ -377,7 +378,15 @@ def get_gulp_energy(atoms, ncpu=8,o=True):
 
 def load_gaussian_process(X, y, y_eng):
     length_scale = [0.1 for i in range(X.shape[1])]
-
+    if exists("refit"):
+       if exists("gpr_energy.pkl"): 
+          subprocess.call("rm gpr_energy.pkl", shell=True) 
+       if exists("gpr_density.pkl"): 
+          subprocess.call("rm gpr_density.pkl", shell=True) 
+       if exists("rfr.pkl"): 
+          subprocess.call("rm rfr.pkl", shell=True)
+       subprocess.call("rm refit", shell=True)
+        
     if not exists("gpr_density.pkl"):
         kernel = (
             0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50))
