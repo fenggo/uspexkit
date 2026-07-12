@@ -120,7 +120,7 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
     return e
 
 
-def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1'):
+def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',dft=0,pop=100):
     ''' Gaussian Process '''
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
     run_gulp(n=n,inp='inp-grad')
@@ -185,7 +185,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
              pickle.dump(gpr_density, f)
         with open('gpr_energy.pkl', 'wb') as f:
              pickle.dump(gpr_energy, f)
-        with open('../{:s}/gpcsp.log'.format(resf),'w') as fl:
+        with open('gpcsp.log','w') as fl:
             print(gpr_density.kernel_,file=fl)
             print(gpr_density.log_marginal_likelihood(),file=fl)
             print(gpr_energy.kernel_,file=fl)
@@ -222,13 +222,6 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
     mean_eng_pred, std_eng_pred = gpr_energy.predict(X_, return_std=True)
     density_rf = rfr_density.predict(X_)
     # print('95% confidence interval: \n', 1.96 * std_prediction)
-         
-    with open('gp.csv','a') as fd:
-        # id_ = fd.tell()
-        print(0,',',imin,',',res[imin],',',data_[imin][-1],',',
-            density_rf[0],',',mean_prediction[0],',',
-            1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
-            file=fd)
     
     density_= mean_prediction[0] # data_[ind[0][im],-1]
     # if ((density_>np.max(y)*1.1 and (density_/density>1.5 or  density/density_>1.5)) or 
@@ -238,7 +231,46 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',resf='results1')
           density_ = density*d_scaler
        else:
           density_ = density_rf[0]
+           
+    if dft:
+       data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
+       if data_pred:
+          if  data_pred.ndim==2:
+              if data_pred.shape[1]>pop:
+                 Density   = data_pred[:,5]
+                 U         = data_pred[:,6]
+                 R         = data_pred[:,2]
+                 n_max     = np.argmax(Density)
 
+                 d         = Density[n_max]
+                 if density_ >=d:
+                    
+                    subprocess.call(f"cp {rootdir}/Specific/*.psf ./", shell=True)
+                    img = siesta_opt(atoms, ncpu=ncpu, us="F", VariableCell="true", tstep=step,
+                                         xcf="GGA", xca="PBE", basistype="split")
+                    subprocess.call(f"mv siesta.out siesta-{s}.out", shell=True)
+                    subprocess.call(f"mv siesta.MDE siesta-{s}.MDE", shell=True)
+                    subprocess.call(f"mv siesta.MD_CAR siesta-{s}.MD_CAR", shell=True)
+                    subprocess.call(f"mv siesta.traj id_{s}.traj", shell=True)
+                    subprocess.call("rm siesta.* ", shell=True)
+                    subprocess.call("rm *.xml ", shell=True)
+                    subprocess.call("rm INPUT_TMP.* ", shell=True)
+                    subprocess.call("rm fdf-* ", shell=True)
+                    img[0].write(f"POSCAR.{s}")
+                    atoms_opt = img[-1]
+                    atoms_opt.write(f"POSCAR.{s}_opt")
+                    masses = np.sum(atoms_opt.get_masses())
+                    volume = atoms_opt.get_volume()
+                    density_ = masses / volume / 0.602214129
+                    energy = atoms_opt.get_potential_energy()
+        
+    with open('gp.csv','a') as fd:
+        # id_ = fd.tell()
+        print(0,',',imin,',',res[imin],',',data_[imin][-1],',',
+            density_rf[0],',',mean_prediction[0],',',
+            1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
+            file=fd)
+        
     energy  = -density_ # mean_eng_pred[0]
     write_output(e=energy)
     write_geometry(atoms=atoms)
