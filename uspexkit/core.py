@@ -240,29 +240,28 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.2,f=1,dat='data',dft=0,pop=100):
                  Density   = data_pred[:,5]
                  U         = data_pred[:,6]
                  R         = data_pred[:,2]
-                 n_max     = np.argmax(Density)
+                 imax      = np.argmax(Density)
 
-                 d         = Density[n_max]
-                 if density_ >=d:
-                    
-                    subprocess.call(f"cp {rootdir}/Specific/*.psf ./", shell=True)
-                    img = siesta_opt(atoms, ncpu=ncpu, us="F", VariableCell="true", tstep=step,
-                                         xcf="GGA", xca="PBE", basistype="split")
-                    subprocess.call(f"mv siesta.out siesta-{s}.out", shell=True)
-                    subprocess.call(f"mv siesta.MDE siesta-{s}.MDE", shell=True)
-                    subprocess.call(f"mv siesta.MD_CAR siesta-{s}.MD_CAR", shell=True)
-                    subprocess.call(f"mv siesta.traj id_{s}.traj", shell=True)
-                    subprocess.call("rm siesta.* ", shell=True)
-                    subprocess.call("rm *.xml ", shell=True)
-                    subprocess.call("rm INPUT_TMP.* ", shell=True)
-                    subprocess.call("rm fdf-* ", shell=True)
-                    img[0].write(f"POSCAR.{s}")
-                    atoms_opt = img[-1]
-                    atoms_opt.write(f"POSCAR.{s}_opt")
-                    masses = np.sum(atoms_opt.get_masses())
-                    volume = atoms_opt.get_volume()
-                    density_ = masses / volume / 0.602214129
-                    energy = atoms_opt.get_potential_energy()
+                 if density_ >=Density[imax]:
+                    if std_prediction>u and res[imin]< 5.0:
+                       subprocess.call(f"cp {rootdir}/Specific/*.psf ./", shell=True)
+                       img = siesta_opt(atoms, ncpu=ncpu, us="F", VariableCell="true", tstep=step,
+                                             xcf="GGA", xca="PBE", basistype="split")
+                       subprocess.call(f"mv siesta.out siesta-{s}.out", shell=True)
+                       subprocess.call(f"mv siesta.MDE siesta-{s}.MDE", shell=True)
+                       subprocess.call(f"mv siesta.MD_CAR siesta-{s}.MD_CAR", shell=True)
+                       subprocess.call(f"mv siesta.traj id_{s}.traj", shell=True)
+                       subprocess.call("rm siesta.* ", shell=True)
+                       subprocess.call("rm *.xml ", shell=True)
+                       subprocess.call("rm INPUT_TMP.* ", shell=True)
+                       subprocess.call("rm fdf-* ", shell=True)
+                       img[0].write(f"POSCAR.{s}")
+                       atoms_opt = img[-1]
+                       atoms_opt.write(f"POSCAR.{s}_opt")
+                       masses = np.sum(atoms_opt.get_masses())
+                       volume = atoms_opt.get_volume()
+                       density_ = masses / volume / 0.602214129
+                       energy = atoms_opt.get_potential_energy()
         
     with open('gp.csv','a') as fd:
         # id_ = fd.tell()
