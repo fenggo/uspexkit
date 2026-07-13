@@ -87,8 +87,10 @@ def main():
     p_gp.add_argument("--b",type=float, default=1.5, help="energy devate the mean tolerance that the structure is broken")
     p_gp.add_argument("--u",type=float, default=0.2, help="uncertainty of Gaussian Process")
     p_gp.add_argument("--f", type=int,default=1, help="which feature factor to be used")
+    p_gp.add_argument("--dft", type=int,default=0, help="whether using active learning and calling DFT")
+    p_gp.add_argument("--pop", type=int,default=100, help="the population size")
     p_gp.add_argument("--data", default='data', help="which data to be used")
-    p_gp.add_argument("--resf", default='results1', help="results file directory")
+    # p_gp.add_argument("--resf", default='results1', help="results file directory")
 
  # ── fixbroken ── 
     p_fixbroken = sub.add_parser("fixbroken", help=COMMANDS["fixbroken"][1])
@@ -151,7 +153,9 @@ def main():
     elif args.command == "calcdata":
         cmd_func(traj=args.t, step=args.step,n=args.n,c=args.c)
     elif args.command == "gp":
-        cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,dat=args.data,resf=args.resf)
+        cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,
+                 dft=args.dft,pop=args.pop,
+                 dat=args.data,resf=args.resf)
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
     elif args.command == "add":
