@@ -155,7 +155,7 @@ def main():
     elif args.command == "gp":
         cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,
                  dft=args.dft,pop=args.pop,
-                 dat=args.data,resf=args.resf)
+                 dat=args.data)
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
     elif args.command == "add":
