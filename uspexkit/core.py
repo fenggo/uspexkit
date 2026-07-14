@@ -234,7 +234,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.03,f=1,dat='data',dft=0,pop=100):
            
     if dft:
        data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
-       print(data_pred,len(data_pred))
+       # print(data_pred,len(data_pred))
        if data_pred.size > 0:
           if  data_pred.ndim==2:
               if data_pred.shape[1]>pop:
