@@ -235,17 +235,17 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.03,f=1,dat='data',dft=0,pop=100):
     if dft:
        data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
        if data_pred.size > 0:
-          # with open('gp.log','a') as fg:
-          #      print(data_pred.ndim,file=fg)
-          #      print(data_pred.shape[0],file=fg)
           if  data_pred.ndim==2:
               if data_pred.shape[0]>pop:
-                 Density   = data_pred[:,5]
+                 Density   = np.where(data_pred[:,6]<0.2 and data_pred[:,2]<10.0,data_pred[:,5],data_pred[:,4])
                  U         = data_pred[:,6]
                  R         = data_pred[:,2]
                  imax      = np.argmax(Density)
-
-                 if density_ >=0.96*Density[imax]:
+                 # with open('gp.log','a') as fg:
+                 #     print(data_pred.ndim,file=fg)
+                 #     print(data_pred.shape[0],file=fg)
+                 #     print(density_,0.9*Density[imax],file=fg)
+                 if density_ >= 0.96*Density[imax]:
                     if std_prediction[0]>u and res[imin]< 5.0:
                        subprocess.call("cp ../Specific/*.psf ./", shell=True)
                        img = siesta_opt(atoms, ncpu=ncpu, us="F", VariableCell="true", tstep=step,
