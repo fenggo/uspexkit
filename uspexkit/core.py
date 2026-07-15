@@ -234,37 +234,35 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.03,f=1,dat='data',dft=0,pop=100):
            
     if dft:
        data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
-       # print(data_pred,len(data_pred))
        if data_pred.size > 0:
+          # with open('gp.log','a') as fg:
+          #      print(data_pred.ndim,file=fg)
+          #      print(data_pred.shape[0],file=fg)
           if  data_pred.ndim==2:
-              if data_pred.shape[1]>pop:
+              if data_pred.shape[0]>pop:
                  Density   = data_pred[:,5]
                  U         = data_pred[:,6]
                  R         = data_pred[:,2]
                  imax      = np.argmax(Density)
 
                  if density_ >=0.96*Density[imax]:
-                    if std_prediction>u and res[imin]< 5.0:
-                       subprocess.call(f"cp {rootdir}/Specific/*.psf ./", shell=True)
+                    if std_prediction[0]>u and res[imin]< 5.0:
+                       subprocess.call("cp ../Specific/*.psf ./", shell=True)
                        img = siesta_opt(atoms, ncpu=ncpu, us="F", VariableCell="true", tstep=step,
                                              xcf="GGA", xca="PBE", basistype="split")
-                       subprocess.call(f"mv siesta.out siesta-{s}.out", shell=True)
-                       subprocess.call(f"mv siesta.MDE siesta-{s}.MDE", shell=True)
-                       subprocess.call(f"mv siesta.MD_CAR siesta-{s}.MD_CAR", shell=True)
-                       subprocess.call(f"mv siesta.traj id_{s}.traj", shell=True)
                        subprocess.call("rm siesta.* ", shell=True)
                        subprocess.call("rm *.xml ", shell=True)
                        subprocess.call("rm INPUT_TMP.* ", shell=True)
                        subprocess.call("rm fdf-* ", shell=True)
-                       img[0].write(f"POSCAR.{s}")
+                       # img[0].write(f"POSCAR.{s}")
                        atoms_opt = img[-1]
-                       atoms_opt.write(f"POSCAR.{s}_opt")
+                       # atoms_opt.write(f"POSCAR.{s}_opt")
                        masses = np.sum(atoms_opt.get_masses())
                        volume = atoms_opt.get_volume()
                        density_ = masses / volume / 0.602214129
                        energy = atoms_opt.get_potential_energy()
-                       with open('refit','w') as fr:
-                            print(1,file=fr)
+                       # with open('refit','w') as fr:
+                       #      print(1,file=fr)
                        subprocess.call("rm gpr_*.pkl", shell=True) 
                        subprocess.call("rm rfr.pkl", shell=True) 
                               
