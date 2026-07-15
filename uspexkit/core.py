@@ -278,11 +278,11 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.03,f=1,dat='data',dft=0,pop=100):
                                   f"{feature[3]},{feature[4]},{feature[5]},{feature[6]},{feature[7]},{feature[8]},{density}",
                                   file=fd)
 
-                      # atoms_opt.calc = SinglePointCalculator(atoms_opt, energy=energy)
-                      with TrajectoryWriter(f"../{dat}/structures_mlp.traj", mode="a") as traj_w:
-                           traj_w.write(atoms=atoms)
-                      with TrajectoryWriter(f"../{dat}/structures.traj", mode="a") as traj_w:
-                           traj_w.write(atoms=atoms_opt)
+                       # atoms_opt.calc = SinglePointCalculator(atoms_opt, energy=energy)
+                       with TrajectoryWriter(f"../{dat}/structures_mlp.traj", mode="a") as traj_w:
+                            traj_w.write(atoms=atoms)
+                       with TrajectoryWriter(f"../{dat}/structures.traj", mode="a") as traj_w:
+                            traj_w.write(atoms=atoms_opt)
                           
     with open('gp.csv','a') as fd:
         # id_ = fd.tell()
