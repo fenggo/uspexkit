@@ -266,7 +266,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.03,f=1,dat='data',dft=0,pop=100):
                        # with open('refit','w') as fr:
                        #      print(1,file=fr)
                        subprocess.call("rm gpr_*.pkl", shell=True) 
-                       subprocess.call("rm rfr.pkl", shell=True) 
+                       subprocess.call("rm rfr_density.pkl", shell=True) 
                               
                        # add structure to database
                        # chdir(data_dir)
