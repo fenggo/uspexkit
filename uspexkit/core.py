@@ -250,7 +250,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.03,f=1,dat='data',dft=0,pop=100):
                  if density_ >= 0.96*Density[imax]:
                     if std_prediction[0]>u and res[imin]< 5.0:
                        subprocess.call("cp ../Specific/*.psf ./", shell=True)
-                       img = siesta_opt(atoms, ncpu=ncpu, us="F", VariableCell="true", tstep=step,
+                       img = siesta_opt(atoms, ncpu=n, us="F", VariableCell="true", tstep=step,
                                              xcf="GGA", xca="PBE", basistype="split")
                        subprocess.call("rm siesta.* ", shell=True)
                        subprocess.call("rm *.xml ", shell=True)
