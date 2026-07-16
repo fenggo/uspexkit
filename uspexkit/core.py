@@ -247,7 +247,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.03,f=1,dat='data',dft=0,pop=100):
                  #     print(data_pred.ndim,file=fg)
                  #     print(data_pred.shape[0],file=fg)
                  #     print(density_,0.9*Density[imax],file=fg)
-                 if density_ >= 0.96*Density[imax]:
+                 if density_ >= 0.99*Density[imax]:
                     if std_prediction[0]>u and res[imin]< 5.0:
                        subprocess.call("cp ../Specific/*.psf ./", shell=True)
                        img = siesta_opt(atoms, ncpu=n, us="F", VariableCell="true", tstep=step,
