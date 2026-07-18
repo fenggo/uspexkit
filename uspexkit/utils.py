@@ -24,7 +24,7 @@ class Stack:
         self.entry = None
 
 
-def read_individuals(indviduals='Individuals',g=None):
+def read_individuals(individuals='Individuals',g=None):
     """Parse USPEX Individuals file, return list of (index, enthalpy, density, fitness)."""
     gene = {}
     with open(individuals) as f:
