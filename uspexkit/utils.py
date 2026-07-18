@@ -24,10 +24,10 @@ class Stack:
         self.entry = None
 
 
-def read_individuals(g=None):
+def read_individuals(indviduals='Individuals',g=None):
     """Parse USPEX Individuals file, return list of (index, enthalpy, density, fitness)."""
     gene = {}
-    with open("Individuals") as f:
+    with open(individuals) as f:
         for line in f.readlines():
             st = Stack([])
             for x in line:

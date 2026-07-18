@@ -188,6 +188,12 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100):
           density_ = density*d_scaler
        else:
           density_ = density_rf[0]
+
+    res = read_individuals(individuals='../results1/Individuals')  # g
+    if res:
+       id_ = res[-1][0] + 1
+    else:
+       id_ = 1
            
     if dft:
        data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
@@ -209,6 +215,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100):
                        subprocess.call("cp ../Specific/*.psf ./", shell=True)
                        img = siesta_opt(atoms, ncpu=n, us="F", VariableCell="true", tstep=step,
                                              xcf="GGA", xca="PBE", basistype="split")
+                       subprocess.call(f"mv siesta.traj id_{id_}.traj", shell=True)
                        subprocess.call("rm siesta.* ", shell=True)
                        subprocess.call("rm *.xml ", shell=True)
                        subprocess.call("rm INPUT_TMP.* ", shell=True)
@@ -243,7 +250,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100):
                           
     with open('gp.csv','a') as fd:
         # id_ = fd.tell()
-        print(0,',',imin,',',res[imin],',',data_[imin][-1],',',
+        print(id_,',',imin,',',res[imin],',',data_[imin][-1],',',
             density_rf[0],',',mean_prediction[0],',',
             1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
             file=fd)
