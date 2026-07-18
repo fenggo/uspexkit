@@ -51,9 +51,12 @@ def read_individuals(individuals='Individuals',g=None):
                 else:
                     gene[g_] = [(i, e, d, f_)]
         st.close()
-
-    k_ = max(gene.keys()) if g is None else g
-    return gene[k_]
+    if gene:
+       k_ = max(gene.keys()) if g is None else g
+       generation = gene[k_]
+    else:
+       generation = gene
+    return generation 
 
 
 def search_structure(feature, D, tolerance=0.01):
