@@ -55,7 +55,7 @@ def read_individuals(individuals='Individuals',g=None):
        k_ = max(gene.keys()) if g is None else g
        generation = gene[k_]
     else:
-       generation = gene
+       generation = None
     return generation 
 
 
