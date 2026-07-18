@@ -90,7 +90,7 @@ def main():
     p_gp.add_argument("--dft", type=int,default=0, help="whether using active learning and calling DFT")
     p_gp.add_argument("--pop", type=int,default=100, help="the population size")
     p_gp.add_argument("--data", default='data', help="which data to be used")
-    # p_gp.add_argument("--resf", default='results1', help="results file directory")
+    p_gp.add_argument("--ref", default='results1', help="results file directory")
 
  # ── fixbroken ── 
     p_fixbroken = sub.add_parser("fixbroken", help=COMMANDS["fixbroken"][1])
@@ -155,7 +155,7 @@ def main():
     elif args.command == "gp":
         cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,
                  dft=args.dft,pop=args.pop,
-                 dat=args.data)
+                 dat=args.data,ref=args.ref)
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
     elif args.command == "add":
