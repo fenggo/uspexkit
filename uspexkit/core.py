@@ -166,51 +166,8 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100):
     scaler = preprocessing.StandardScaler().fit(X_raw)
     X      = scaler.transform(X_raw)
  
-    if not exists('gpr_density.pkl'):
-        length_scale = [0.1 for _ in feature]
-            
-        kernel = ( 0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50)) +   # 线性/多项式趋势 捕捉线性趋势及二阶耦合 (x_i * x_j)
-                    0.35**2 * Matern(length_scale=length_scale, nu=2.5) +         # 局部耦合
-                    WhiteKernel(noise_level=0.031,noise_level_bounds=(1e-8, 1e-1))    )                                   # 噪声补偿
-        gpr_density = GaussianProcessRegressor(kernel=kernel,n_restarts_optimizer=10,alpha=1e-10,normalize_y=True)
-        gpr_density.fit(X,y)
-            
-        kernel = ( 0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50)) +   # 线性/多项式趋势 捕捉线性趋势及二阶耦合 (x_i * x_j)
-                    0.35**2 * Matern(length_scale=length_scale, nu=2.5) +         # 局部耦合
-                    WhiteKernel(noise_level=0.031,noise_level_bounds=(1e-8, 1e-1))    )     # 噪声补偿
-        gpr_energy = GaussianProcessRegressor(kernel=kernel,n_restarts_optimizer=10,alpha=1e-10,normalize_y=True)
-        gpr_energy.fit(X,y_eng)
-        # score  =  gaussian_process.score(X, y)
-        with open('gpr_density.pkl', 'wb') as f:
-             pickle.dump(gpr_density, f)
-        with open('gpr_energy.pkl', 'wb') as f:
-             pickle.dump(gpr_energy, f)
-        with open('gpcsp.log','w') as fl:
-            print(gpr_density.kernel_,file=fl)
-            print(gpr_density.log_marginal_likelihood(),file=fl)
-            print(gpr_energy.kernel_,file=fl)
-            print(gpr_energy.log_marginal_likelihood(),file=fl)
-            # for hyperparameter in kernel.hyperparameters:
-                  # print(kernel.kernel_,file=fl)
-                  # print(hyperparameter,file=fl)
-    else:
-        with open('gpr_density.pkl', 'rb') as f:
-             gpr_density = pickle.load(f)
-        with open('gpr_energy.pkl', 'rb') as f:
-             gpr_energy = pickle.load(f)
-       
-    if not exists('rfr_density.pkl'):
-       rfr_density = RandomForestRegressor(random_state=37, n_estimators=300,
-                                       min_weight_fraction_leaf=0.0,
-                                       oob_score=True)
-       rfr_density.fit(X, y)  # train
-       feature_importances = rfr_density.feature_importances_
-       with open('rfr_density.pkl', 'wb') as f:
-            pickle.dump(rfr_density, f)
-    else:
-       with open('rfr_density.pkl', 'rb') as f:
-            rfr_density = pickle.load(f)
-
+    gpr_energy, gpr_density = load_gaussian_process(X, y, y_eng)
+    rfr_density = load_rfr(X, y)
     if not exists('gp.csv'):
         with open('gp.csv','w') as fd:
              print(',   index,          residual,        density_min,         density_rf,   density_gp,'
@@ -265,8 +222,8 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100):
                        energy = atoms_opt.get_potential_energy()
                        # with open('refit','w') as fr:
                        #      print(1,file=fr)
-                       subprocess.call("rm gpr_*.pkl", shell=True) 
-                       subprocess.call("rm rfr_density.pkl", shell=True) 
+                       subprocess.call("rm gpr_density.pkl gpr_energy.pkl", shell=True) 
+                       subprocess.call("rm rfr.pkl", shell=True) 
                               
                        # add structure to database
                        # chdir(data_dir)
@@ -430,15 +387,14 @@ def get_gulp_energy(atoms, ncpu=8,o=True):
 
 def load_gaussian_process(X, y, y_eng):
     length_scale = [0.1 for i in range(X.shape[1])]
-    if exists("refit"):
-       if exists("gpr_energy.pkl"): 
-          subprocess.call("rm gpr_energy.pkl", shell=True) 
-       if exists("gpr_density.pkl"): 
-          subprocess.call("rm gpr_density.pkl", shell=True) 
-       if exists("rfr.pkl"): 
-          subprocess.call("rm rfr.pkl", shell=True)
-       subprocess.call("rm refit", shell=True)
-        
+    # if exists("refit"):
+    #    if exists("gpr_energy.pkl"): 
+    #       subprocess.call("rm gpr_energy.pkl", shell=True) 
+    #    if exists("gpr_density.pkl"): 
+    #       subprocess.call("rm gpr_density.pkl", shell=True) 
+    #    if exists("rfr.pkl"): 
+    #       subprocess.call("rm rfr.pkl", shell=True)
+    #    subprocess.call("rm refit", shell=True)
     if not exists("gpr_density.pkl"):
         kernel = (
             0.00581**2 * DotProduct(sigma_0=0.412, sigma_0_bounds=(1e-4, 50))
