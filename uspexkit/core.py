@@ -235,10 +235,10 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100,r
                        # add structure to database
                        # chdir(data_dir)
                        with open(f"../{dat}/feature_mlp.csv", "a") as fd:
-                            print(f"0,{feature[0]},{feature[1]},{feature[2]},{feature[3]},"
+                            print(f"{id_},{feature[0]},{feature[1]},{feature[2]},{feature[3]},"
                                   f"{feature[4]},{feature[5]},{feature[6]},{feature[7]},{feature[8]},{feature[9]}", file=fd)
                        with open(f"../{dat}/feature.csv", "a") as fd:
-                            print(f"0,{energy},{feature[1]},{feature[2]},"
+                            print(f"{id_},{energy},{feature[1]},{feature[2]},"
                                   f"{feature[3]},{feature[4]},{feature[5]},{feature[6]},{feature[7]},{feature[8]},{density}",
                                   file=fd)
 
