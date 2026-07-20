@@ -120,7 +120,7 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
     return e
 
 
-def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100,ref='results1'):
+def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,pop=100,ref='results1'):
     ''' Gaussian Process '''
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
     run_gulp(n=n,inp='inp-grad')
@@ -210,7 +210,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,pop=100,r
                  #     print(data_pred.ndim,file=fg)
                  #     print(data_pred.shape[0],file=fg)
                  #     print(density_,0.9*Density[imax],file=fg)
-                 if density_ >= 0.98*Density[imax]:
+                 if density_ >= 0.98*Density[imax] and density_ >= den:
                     if std_prediction[0]>u and res[imin]< 5.0:
                        subprocess.call("cp ../Specific/*.psf ./", shell=True)
                        img = siesta_opt(atoms, ncpu=n, us="F", VariableCell="true", tstep=step,

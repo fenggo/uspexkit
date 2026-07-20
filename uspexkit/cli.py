@@ -89,6 +89,7 @@ def main():
     p_gp.add_argument("--u",type=float, default=0.03, help="uncertainty of Gaussian Process")
     p_gp.add_argument("--f", type=int,default=1, help="which feature factor to be used")
     p_gp.add_argument("--dft", type=int,default=0, help="whether using active learning and calling DFT")
+    p_gp.add_argument("--den", type=float,default=1.82, help="density  criteria to use active learning and calling DFT")
     p_gp.add_argument("--pop", type=int,default=100, help="the population size")
     p_gp.add_argument("--data", default='data', help="which data to be used")
     p_gp.add_argument("--ref", default='results1', help="results file directory")
