@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -18,6 +18,7 @@ COMMANDS = {
     "addall": (addall, "add a structure to data"),
     "supercell": (supercell, "build a supercell"),
     "update": (update, "update a structure to data"),
+    "info": (info, "Print energy and lattice information of a structure"),
 }
 
 
@@ -127,6 +128,12 @@ def main():
     p_supercell.add_argument("--t", type=str,default=None, help="trajector file name")
     p_supercell.add_argument("--g", type=str,default=None, help="geometry file name")
 
+ # ── info ──
+    p_info = sub.add_parser("info", help=COMMANDS["info"][1])
+    p_info.add_argument("--gen", default=None, help="Geometry file (e.g. POSCAR, gulp.cif)")
+    p_info.add_argument("--traj", default=None, help="Trajectory file name")
+    p_info.add_argument("--i", type=int, default=-1, help="Frame index (default: -1)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -166,4 +173,6 @@ def main():
         cmd_func(traj=args.t,gen=args.g,x=args.x,y=args.y,z=args.z)
     elif args.command == "update":
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,inde=args.i,ncpu=args.n)
+    elif args.command == "info":
+        cmd_func(gen=args.gen, traj=args.traj, i=args.i)
 

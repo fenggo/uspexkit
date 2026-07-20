@@ -849,7 +849,62 @@ def fdf(gen="poscar.gen", xcf="gga", i=-1):
         print("Not supported yet!")
 
 # ──────────────────────────────────────────────
-#  sample — 采样结构
+#  info - 打印能量与晶格常数信息
+# ──────────────────────────────────────────────
+
+def info(gen=None, traj=None, i=-1):
+    """Print energy and lattice information of a structure.
+
+    Args:
+        gen: geometry file name (e.g. POSCAR, gulp.cif)
+        traj: trajectory file name
+        i: frame index (default: -1, last frame)
+    """
+    if gen is not None:
+        atoms = read(gen)
+    elif traj is not None:
+        images = Trajectory(traj)
+        atoms = images[i]
+    else:
+        print("Error: please specify a structure file (--gen) or trajectory (--traj)")
+        return
+
+    cell = atoms.get_cell()
+    lengths = cell.lengths()
+    angles = cell.angles()
+    volume = atoms.get_volume()
+    masses = np.sum(atoms.get_masses())
+    density = masses / volume / 0.602214129
+    natoms = len(atoms)
+    formula = atoms.get_chemical_formula()
+
+    print(f"\n─ Structure Info ─────────────────────────────")
+    print(f"  Formula:          {formula}")
+    print(f"  Number of atoms:  {natoms}")
+    print(f"\n─ Lattice ────────────────────────────────────")
+    print(f"  a = {lengths[0]:12.6f} Å")
+    print(f"  b = {lengths[1]:12.6f} Å")
+    print(f"  c = {lengths[2]:12.6f} Å")
+    print(f"  α = {angles[0]:12.6f}°")
+    print(f"  β = {angles[1]:12.6f}°")
+    print(f"  γ = {angles[2]:12.6f}°")
+    print(f"  Volume  = {volume:12.4f} ų")
+    print(f"  Density = {density:12.6f} g/cm³")
+
+    try:
+        energy = atoms.get_potential_energy()
+        print(f"\n─ Energy ─────────────────────────────────────")
+        print(f"  Total energy = {energy:16.8f} eV")
+        if natoms > 0:
+            print(f"  Energy/atom  = {energy / natoms:16.8f} eV/atom")
+    except Exception:
+        print(f"\n─ Energy ─────────────────────────────────────")
+        print("  (no energy data available)")
+    print(f"──────────────────────────────────────────────\n")
+
+
+# ──────────────────────────────────────────────
+#  sample - 采样结构
 # ──────────────────────────────────────────────
 
 def sample(ind="", t=None):

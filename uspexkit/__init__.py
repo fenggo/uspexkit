@@ -22,4 +22,7 @@ def __getattr__(name):
     if name == "sample":
         from uspexkit.core import sample as _sample
         return _sample
+    if name == "info":
+        from uspexkit.core import info as _info
+        return _info
     raise AttributeError(f"module 'uspexkit' has no attribute {name!r}")
