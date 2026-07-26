@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -19,6 +19,7 @@ COMMANDS = {
     "supercell": (supercell, "build a supercell"),
     "update": (update, "update a structure to data"),
     "info": (info, "Print energy and lattice information of a structure"),
+    "fingerprint": (fingerprint, "Compute USPEX structural fingerprint (Cython accelerated)"),
 }
 
 
@@ -135,6 +136,17 @@ def main():
     p_info.add_argument("--traj", default=None, help="Trajectory file name")
     p_info.add_argument("--i", type=int, default=-1, help="Frame index (default: -1)")
 
+ # ── fingerprint ──
+    p_fp = sub.add_parser("fingerprint", help=COMMANDS["fingerprint"][1])
+    p_fp.add_argument("--g", default=None, help="Geometry structure file (e.g. POSCAR)")
+    p_fp.add_argument("--traj", default=None, help="Trajectory file name")
+    p_fp.add_argument("--i", type=int, default=-1, help="Frame index (default: -1)")
+    p_fp.add_argument("--rmax", type=float, default=12.0, help="Cutoff radius Rmax (Å)")
+    p_fp.add_argument("--sigma", type=float, default=0.05, help="Gaussian broadening sigma")
+    p_fp.add_argument("--delta", type=float, default=0.08, help="Bin width delta (Å)")
+    p_fp.add_argument("--dimension", type=int, default=3, help="Dimension: 3=3D, 0=cluster, 2=2D")
+    p_fp.add_argument("--output", default=None, help="Output .npz file (optional)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -176,4 +188,8 @@ def main():
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,inde=args.i,ncpu=args.n)
     elif args.command == "info":
         cmd_func(gen=args.gen, traj=args.traj, i=args.i)
+    elif args.command == "fingerprint":
+        cmd_func(gen=args.g, traj=args.traj, i=args.i,
+                 rmax=args.rmax, sigma=args.sigma, delta=args.delta,
+                 dimension=args.dimension, output=args.output)
 

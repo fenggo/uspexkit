@@ -904,6 +904,132 @@ def info(gen=None, traj=None, i=-1):
 
 
 # ──────────────────────────────────────────────
+#  fingerprint - 分子指纹计算 (Cython 加速)
+# ──────────────────────────────────────────────
+
+def _atoms_to_fingerprint_input(atoms):
+    """从 ASE Atoms 提取指纹计算所需的 numpy 数组。
+
+    将原子按元素种类分组，返回 lattice, coords, numIons, atomType。
+    """
+    from collections import OrderedDict
+
+    cell = atoms.get_cell()
+    lattice = np.ascontiguousarray(np.array(cell, dtype=np.float64))
+    frac = atoms.get_scaled_positions(wrap=False)
+    coords = np.ascontiguousarray(np.array(frac, dtype=np.float64))
+
+    symbols = atoms.get_chemical_symbols()
+    # 按 POSCAR 顺序分组：同元素连续排列
+    seen = OrderedDict()
+    for s in symbols:
+        if s not in seen:
+            seen[s] = 0
+        seen[s] += 1
+    numIons = np.ascontiguousarray(np.array(list(seen.values()), dtype=np.int32))
+
+    # 元素序号 (原子序数)
+    _symbol_to_z = {
+        'H': 1, 'He': 2, 'Li': 3, 'Be': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8,
+        'F': 9, 'Ne': 10, 'Na': 11, 'Mg': 12, 'Al': 13, 'Si': 14, 'P': 15,
+        'S': 16, 'Cl': 17, 'Ar': 18, 'K': 19, 'Ca': 20, 'Sc': 21, 'Ti': 22,
+        'V': 23, 'Cr': 24, 'Mn': 25, 'Fe': 26, 'Co': 27, 'Ni': 28, 'Cu': 29,
+        'Zn': 30, 'Ga': 31, 'Ge': 32, 'As': 33, 'Se': 34, 'Br': 35, 'Kr': 36,
+    }
+    atomType = np.ascontiguousarray(
+        np.array([_symbol_to_z.get(s, 0) for s in seen.keys()], dtype=np.int32))
+    return lattice, coords, numIons, atomType
+
+
+def fingerprint(gen=None, traj=None, i=-1,
+                rmax=12.0, sigma=0.05, delta=0.08, dimension=3,
+                output=None):
+    """Compute the USPEX structural fingerprint of a molecular crystal.
+
+    Uses the Cython-accelerated ``uspex_fast_core`` module to compute
+    makeMatrices + fingerprint_calc, producing order, fing, and atom_fing.
+
+    Args:
+        gen: geometry structure file (e.g. POSCAR).  Read with ASE.
+        traj: trajectory file name (alternative to gen).
+        i: frame index for trajectory (default: -1).
+        rmax: cutoff radius for neighbour search (Å).
+        sigma: Gaussian broadening for distance bins.
+        delta: bin width (Å).
+        dimension: 3 for 3D crystals, 0 for cluster, 2 for 2D.
+        output: output file name (.npz).  If None, print summary only.
+    """
+    from uspexkit.uspex_fast_core import compute_all
+
+    if gen is not None:
+        atoms = read(gen)
+    elif traj is not None:
+        images = Trajectory(traj)
+        atoms = images[i]
+    else:
+        print("Error: please specify a structure file (--gen) or trajectory (--traj)")
+        return
+
+    lattice, coords, numIons, atomType = _atoms_to_fingerprint_input(atoms)
+
+    n_species = len(numIons)
+    n_atoms = int(np.sum(numIons))
+    volume = abs(np.linalg.det(lattice))
+    masses = np.sum(atoms.get_masses())
+    density = masses / volume / 0.602214129
+
+    print(f"\n─ Fingerprint ────────────────────────────────")
+    print(f"  Structure:    {gen or traj}")
+    print(f"  Atoms:        {n_atoms}  ({n_species} species)")
+    symbols = atoms.get_chemical_symbols()
+    from collections import OrderedDict
+    seen = OrderedDict()
+    for s in symbols:
+        if s not in seen:
+            seen[s] = 0
+        seen[s] += 1
+    species_str = "  ".join(f"{s}:{c}" for s, c in seen.items())
+    print(f"  Composition:  {species_str}")
+    print(f"  Volume:       {volume:.4f} ų")
+    print(f"  Density:      {density:.6f} g/cm³")
+    print(f"  Parameters:   Rmax={rmax}  σ={sigma}  δ={delta}  dim={dimension}")
+
+    result = compute_all(coords, lattice, numIons, atomType,
+                         Rmax=rmax, sigma=sigma, delta=delta,
+                         dimension=dimension)
+
+    order = result['order']
+    fing = result['fing']
+    atom_fing = result['atom_fing']
+    n_pairs = result['n_pairs']
+    t_matrix = result['time_matrix']
+    t_fp = result['time_fingerprint']
+    t_total = result['time_total']
+
+    print(f"\n─ Results ────────────────────────────────────")
+    print(f"  Pairs:        {n_pairs}")
+    print(f"  order:        shape={order.shape}  "
+          f"min={order.min():.6e}  max={order.max():.6e}  "
+          f"mean={order.mean():.6e}")
+    print(f"  fing:         shape={fing.shape}  "
+          f"min={fing.min():.6e}  max={fing.max():.6e}")
+    print(f"  atom_fing:    shape={atom_fing.shape}  "
+          f"min={atom_fing.min():.6e}  max={atom_fing.max():.6e}")
+    print(f"  Time:         matrix={t_matrix:.4f}s  "
+          f"fingerprint={t_fp:.4f}s  total={t_total:.4f}s")
+
+    if output:
+        np.savez(output, order=order, fing=fing, atom_fing=atom_fing,
+                 V=result['V'], n_pairs=n_pairs,
+                 numIons=numIons, atomType=atomType,
+                 rmax=rmax, sigma=sigma, delta=delta, dimension=dimension)
+        print(f"\n  Saved to: {output}")
+
+    print(f"──────────────────────────────────────────────\n")
+    return result
+
+
+# ──────────────────────────────────────────────
 #  sample - 采样结构
 # ──────────────────────────────────────────────
 

@@ -30,6 +30,7 @@ pip install .
 | `fdf` | 生成 SIESTA 输入文件 |
 | `sample` | 按索引采样结构输出到轨迹 |
 | `supercell` | 构建超胞 |
+| `fingerprint` | 计算 USPEX 分子结构指纹（Cython 加速） |
 
 ---
 
@@ -382,7 +383,74 @@ uspexkit supercell [--x NX] [--y NY] [--z NZ] [--t TRAJ] [--g GEO]
 
 ---
 
+## 13. `fingerprint` - 分子结构指纹
+
+使用 Cython 加速计算 USPEX 分子结构指纹（`makeMatrices` + `fingerprint_calc`），输出 `order`、`fing`、`atom_fing` 三个指纹数组。
+
+```bash
+uspexkit fingerprint [--g GEO] [--traj TRAJ] [--i I] [--rmax RMAX] [--sigma SIGMA] [--delta DELTA] [--dimension DIM] [--output OUTPUT]
+```
+
+### 参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--g` | `None` | 几何结构文件（如 `POSCAR`、`gulp.cif`），用 ASE 读取 |
+| `--traj` | `None` | 轨迹文件（与 `--g` 二选一） |
+| `--i` | `-1` | 轨迹帧索引（`-1` = 最后一帧） |
+| `--rmax` | `12.0` | 近邻搜索截断半径 Rmax（Å） |
+| `--sigma` | `0.05` | 高斯展宽 σ |
+| `--delta` | `0.08` | 距离分箱宽度 δ（Å） |
+| `--dimension` | `3` | 维度：`3` = 3D 晶体，`0` = 团簇，`2` = 2D |
+| `--output` | `None` | 输出 `.npz` 文件路径（可选，不指定则仅打印摘要） |
+
+### 输出
+
+- 终端打印指纹统计信息（形状、最值、均值、耗时）
+- 若指定 `--output`：保存 `.npz` 文件，包含 `order`、`fing`、`atom_fing`、`V`、`n_pairs` 等数组
+
+### 使用示例
+
+```bash
+# 从 POSCAR 计算指纹
+uspexkit fingerprint --g=POSCAR
+
+# 自定义参数并保存结果
+uspexkit fingerprint --g=POSCAR --rmax=10.0 --sigma=0.07 --output=fp.npz
+
+# 从轨迹文件计算
+uspexkit fingerprint --traj=Individuals.traj --i=-1
+```
+
+### 工作原理
+
+1. 用 ASE 读取结构文件，提取晶格、分数坐标、元素种类和原子数
+2. 调用 Cython 加速模块 `uspex_fast_core.compute_all`：
+   - `build_distance_matrix`：构建近邻距离矩阵（替代 Octave `makeMatrices.m`）
+   - `fingerprint_calc`：计算 erf 展宽距离直方图指纹（替代 Octave `fingerprint_calc.m`）
+3. 输出三个指纹数组：
+   - `order` (N,)：每个原子的结构序参量（√(Σ weight·δ·atom_fing²/V^(1/3))）
+   - `fing` (S², numBins)：全局指纹矩阵（S = 元素种类数）
+   - `atom_fing` (N, S, numBins)：原子级指纹
+
+---
+
 ## 数据格式说明
+
+### 指纹计算输出 (`.npz`)
+
+`fingerprint --output` 生成的 `.npz` 文件包含以下数组：
+
+| 键 | 形状 | 说明 |
+|------|------|------|
+| `order` | (N,) | 每个原子的结构序参量 |
+| `fing` | (S², numBins) | 全局指纹矩阵（S = 元素种类数） |
+| `atom_fing` | (N, S, numBins) | 原子级指纹 |
+| `V` | 标量 | 晶胞体积 |
+| `n_pairs` | 标量 | 近邻原子对数 |
+| `numIons` | (S,) | 各元素原子数 |
+| `atomType` | (S,) | 各元素原子序数 |
+| `rmax` / `sigma` / `delta` / `dimension` | 标量 | 计算参数 |
 
 ### `feature_mlp.csv` (GULP 能量特征)
 
