@@ -943,7 +943,7 @@ def _atoms_to_fingerprint_input(atoms):
 
 def fingerprint(gen=None, traj=None, i=-1,
                 rmax=12.0, sigma=0.05, delta=0.08, dimension=3,
-                output=None):
+                output=None, intra_map=None):
     """Compute the USPEX structural fingerprint of a molecular crystal.
 
     Uses the Cython-accelerated ``uspex_fast_core`` module to compute
@@ -958,8 +958,13 @@ def fingerprint(gen=None, traj=None, i=-1,
         delta: bin width (Å).
         dimension: 3 for 3D crystals, 0 for cluster, 2 for 2D.
         output: output file name (.npz).  If None, print summary only.
+        intra_map: optional (N, N) int8 array.  Entries of 0 mark
+            intra-molecular atom pairs within the basic cell whose
+            distances should be zeroed (matching Octave
+            ``Intra_MOL_dist``).  Only zero-shift (basic-cell) pairs
+            are filtered; periodic-image pairs are always kept.
     """
-    from uspexkit.uspex_fast_core import compute_all
+    from uspexkit.uspex_fast_core import build_distance_matrix, fingerprint_calc
 
     if gen is not None:
         atoms = read(gen)
@@ -993,18 +998,41 @@ def fingerprint(gen=None, traj=None, i=-1,
     print(f"  Volume:       {volume:.4f} ų")
     print(f"  Density:      {density:.6f} g/cm³")
     print(f"  Parameters:   Rmax={rmax}  σ={sigma}  δ={delta}  dim={dimension}")
+    if intra_map is not None:
+        print(f"  Intra_map:    {intra_map.shape}  (filtering zero-shift pairs)")
 
-    result = compute_all(coords, lattice, numIons, atomType,
-                         Rmax=rmax, sigma=sigma, delta=delta,
-                         dimension=dimension)
+    import time as _time
+    t0 = _time.time()
 
-    order = result['order']
-    fing = result['fing']
-    atom_fing = result['atom_fing']
-    n_pairs = result['n_pairs']
-    t_matrix = result['time_matrix']
-    t_fp = result['time_fingerprint']
-    t_total = result['time_total']
+    dist_arr, cc_idx, bc_idx, ti_arr, tj_arr, shift_arr, N_out, V, N = build_distance_matrix(
+        coords, lattice, rmax, numIons, atomType
+    )
+    t1 = _time.time()
+
+    # Apply Intra_map filtering (matching Octave ReadJobs_310.m behaviour):
+    # Only zero-shift (basic-cell) pairs are filtered.  Periodic-image
+    # pairs are always kept, even if the atoms belong to the same molecule.
+    if intra_map is not None:
+        intra_map = np.asarray(intra_map, dtype=np.int8)
+        zero_shift_mask = (shift_arr == 0)
+        intra_mask = (intra_map[cc_idx, bc_idx] == 1)
+        keep_mask = np.where(zero_shift_mask, intra_mask, True)
+        dist_arr = dist_arr[keep_mask]
+        cc_idx = cc_idx[keep_mask]
+        bc_idx = bc_idx[keep_mask]
+        ti_arr = ti_arr[keep_mask]
+        tj_arr = tj_arr[keep_mask]
+
+    order, fing, atom_fing, _ = fingerprint_calc(
+        dist_arr, cc_idx, bc_idx, ti_arr, tj_arr, N_out, V, numIons,
+        rmax, sigma, delta, dimension
+    )
+    t2 = _time.time()
+
+    t_matrix = t1 - t0
+    t_fp = t2 - t1
+    t_total = t2 - t0
+    n_pairs = len(dist_arr)
 
     print(f"\n─ Results ────────────────────────────────────")
     print(f"  Pairs:        {n_pairs}")
@@ -1020,13 +1048,22 @@ def fingerprint(gen=None, traj=None, i=-1,
 
     if output:
         np.savez(output, order=order, fing=fing, atom_fing=atom_fing,
-                 V=result['V'], n_pairs=n_pairs,
+                 V=V, n_pairs=n_pairs,
                  numIons=numIons, atomType=atomType,
                  rmax=rmax, sigma=sigma, delta=delta, dimension=dimension)
         print(f"\n  Saved to: {output}")
 
     print(f"──────────────────────────────────────────────\n")
-    return result
+    return {
+        'order': order,
+        'fing': fing,
+        'atom_fing': atom_fing,
+        'V': V,
+        'n_pairs': n_pairs,
+        'time_matrix': t_matrix,
+        'time_fingerprint': t_fp,
+        'time_total': t_total,
+    }
 
 
 # ──────────────────────────────────────────────

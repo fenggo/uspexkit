@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import numpy as np
 from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint
 
 COMMANDS = {
@@ -146,6 +147,10 @@ def main():
     p_fp.add_argument("--delta", type=float, default=0.08, help="Bin width delta (Å)")
     p_fp.add_argument("--dimension", type=int, default=3, help="Dimension: 3=3D, 0=cluster, 2=2D")
     p_fp.add_argument("--output", default=None, help="Output .npz file (optional)")
+    p_fp.add_argument("--intra-map", default=None,
+                      help="Intra-molecular distance map (.npy/.npz) for filtering "
+                           "intra-molecular pairs. Only zero-shift (basic-cell) pairs "
+                           "are filtered; periodic-image pairs are always kept.")
 
     args = parser.parse_args()
 
@@ -189,7 +194,15 @@ def main():
     elif args.command == "info":
         cmd_func(gen=args.gen, traj=args.traj, i=args.i)
     elif args.command == "fingerprint":
+        intra_map = None
+        if args.intra_map:
+            if args.intra_map.endswith(".npz"):
+                tmp = np.load(args.intra_map)
+                intra_map = tmp[list(tmp.keys())[0]] if len(tmp.files) == 1 else tmp["intra_map"]
+            else:
+                intra_map = np.load(args.intra_map)
         cmd_func(gen=args.g, traj=args.traj, i=args.i,
                  rmax=args.rmax, sigma=args.sigma, delta=args.delta,
-                 dimension=args.dimension, output=args.output)
+                 dimension=args.dimension, output=args.output,
+                 intra_map=intra_map)
 
