@@ -151,6 +151,16 @@ def main():
                       help="Intra-molecular distance map (.npy/.npz) for filtering "
                            "intra-molecular pairs. Only zero-shift (basic-cell) pairs "
                            "are filtered; periodic-image pairs are always kept.")
+    p_fp.add_argument("--soap", action="store_true",
+                      help="Also compute SOAP fingerprint (dscribe). "
+                           "Captures local angular environment for better "
+                           "discrimination of molecular crystal polymorphs.")
+    p_fp.add_argument("--soap-r-cut", type=float, default=6.0,
+                      help="SOAP local-environment cutoff radius (Å)")
+    p_fp.add_argument("--soap-n-max", type=int, default=8,
+                      help="SOAP number of radial basis functions")
+    p_fp.add_argument("--soap-l-max", type=int, default=6,
+                      help="SOAP maximum angular momentum")
 
     args = parser.parse_args()
 
@@ -204,5 +214,7 @@ def main():
         cmd_func(gen=args.g, traj=args.traj, i=args.i,
                  rmax=args.rmax, sigma=args.sigma, delta=args.delta,
                  dimension=args.dimension, output=args.output,
-                 intra_map=intra_map)
+                 intra_map=intra_map, soap=args.soap,
+                 soap_r_cut=args.soap_r_cut, soap_n_max=args.soap_n_max,
+                 soap_l_max=args.soap_l_max)
 

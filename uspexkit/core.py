@@ -943,11 +943,17 @@ def _atoms_to_fingerprint_input(atoms):
 
 def fingerprint(gen=None, traj=None, i=-1,
                 rmax=12.0, sigma=0.05, delta=0.08, dimension=3,
-                output=None, intra_map=None):
-    """Compute the USPEX structural fingerprint of a molecular crystal.
+                output=None, intra_map=None, soap=False,
+                soap_r_cut=6.0, soap_n_max=8, soap_l_max=6):
+    """Compute the structural fingerprint of a molecular crystal.
 
-    Uses the Cython-accelerated ``uspex_fast_core`` module to compute
-    makeMatrices + fingerprint_calc, producing order, fing, and atom_fing.
+    By default computes the USPEX RDF fingerprint via the Cython-accelerated
+    ``uspex_fast_core`` module (makeMatrices + fingerprint_calc).
+
+    When *soap* is True, additionally computes a SOAP (Smooth Overlap of
+    Atomic Positions) fingerprint via ``dscribe``.  SOAP captures local
+    angular environment and is far more discriminating for molecular
+    crystal polymorphs than the pure radial RDF.
 
     Args:
         gen: geometry structure file (e.g. POSCAR).  Read with ASE.
@@ -963,6 +969,10 @@ def fingerprint(gen=None, traj=None, i=-1,
             distances should be zeroed (matching Octave
             ``Intra_MOL_dist``).  Only zero-shift (basic-cell) pairs
             are filtered; periodic-image pairs are always kept.
+        soap: if True, also compute SOAP fingerprint.
+        soap_r_cut: SOAP local-environment cutoff (Å, default 6.0).
+        soap_n_max: SOAP radial basis count (default 8).
+        soap_l_max: SOAP angular momentum maximum (default 6).
     """
     from uspexkit.uspex_fast_core import build_distance_matrix, fingerprint_calc
 
@@ -1046,15 +1056,7 @@ def fingerprint(gen=None, traj=None, i=-1,
     print(f"  Time:         matrix={t_matrix:.4f}s  "
           f"fingerprint={t_fp:.4f}s  total={t_total:.4f}s")
 
-    if output:
-        np.savez(output, order=order, fing=fing, atom_fing=atom_fing,
-                 V=V, n_pairs=n_pairs,
-                 numIons=numIons, atomType=atomType,
-                 rmax=rmax, sigma=sigma, delta=delta, dimension=dimension)
-        print(f"\n  Saved to: {output}")
-
-    print(f"──────────────────────────────────────────────\n")
-    return {
+    result = {
         'order': order,
         'fing': fing,
         'atom_fing': atom_fing,
@@ -1064,6 +1066,38 @@ def fingerprint(gen=None, traj=None, i=-1,
         'time_fingerprint': t_fp,
         'time_total': t_total,
     }
+
+    # ── optional SOAP fingerprint ──
+    if soap:
+        from uspexkit.soap import soap_fingerprint as _soap_fp
+        t_s0 = _time.time()
+        soap_fp = _soap_fp(atoms, r_cut=soap_r_cut, n_max=soap_n_max,
+                           l_max=soap_l_max)
+        t_s1 = _time.time()
+        print(f"\n─ SOAP ───────────────────────────────────────")
+        print(f"  Parameters:   r_cut={soap_r_cut}  n_max={soap_n_max}  "
+              f"l_max={soap_l_max}")
+        print(f"  soap_fp:      shape={soap_fp.shape}  "
+              f"min={soap_fp.min():.6e}  max={soap_fp.max():.6e}")
+        print(f"  nonzero:      {np.count_nonzero(soap_fp)}/{soap_fp.size} "
+              f"({np.count_nonzero(soap_fp)/soap_fp.size:.0%})")
+        print(f"  Time:         {t_s1-t_s0:.4f}s")
+        result['soap_fp'] = soap_fp
+        result['time_soap'] = t_s1 - t_s0
+
+    if output:
+        save_dict = dict(order=order, fing=fing, atom_fing=atom_fing,
+                         V=V, n_pairs=n_pairs,
+                         numIons=numIons, atomType=atomType,
+                         rmax=rmax, sigma=sigma, delta=delta,
+                         dimension=dimension)
+        if soap and 'soap_fp' in result:
+            save_dict['soap_fp'] = result['soap_fp']
+        np.savez(output, **save_dict)
+        print(f"\n  Saved to: {output}")
+
+    print(f"──────────────────────────────────────────────\n")
+    return result
 
 
 # ──────────────────────────────────────────────
