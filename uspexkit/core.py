@@ -38,7 +38,7 @@ def supercell(gen=None,traj=None,x=1,y=1,z=1):
     if traj is None:
         A = read(gen)
         # build.make_supercell(A,[2,2,2])
-        _,atoms = SuperCell(A,fac=1.0,supercell=[args.x,args.y,args.z])
+        _,atoms = SuperCell(A,fac=1.0,supercell=[x,y,z])
         write(f'POSCAR.supercell_{x}_{y}_{z}',atoms)
     else:
         images = Trajectory(traj)
