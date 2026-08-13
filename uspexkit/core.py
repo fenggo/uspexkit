@@ -15,7 +15,7 @@ from sklearn.gaussian_process.kernels import (RBF,DotProduct, WhiteKernel,
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 # from ase import build
-from ase.io import read
+from ase.io import read,write
 from ase.io.trajectory import Trajectory, TrajectoryWriter
 from ase.calculators.singlepoint import SinglePointCalculator
 from irff.md.gulp import opt,get_reax_energy,write_gulp_in
