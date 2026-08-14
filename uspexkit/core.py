@@ -353,7 +353,7 @@ def fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1):
           cell    = atoms.get_cell()
           irun = 0
           fac  = 1.0
-          while e_mean-e[0]>broken and irun < 15:
+          while e_mean-e[0]>broken and irun < 4:
                 fac = fac*scale
                 _,atoms = enlarge(m_,cell=cell,fac=fac,supercell=[1,1,1])
                 atoms,e,density = get_gulp_energy(atoms, ncpu=ncpu,o=False)
