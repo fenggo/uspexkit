@@ -44,11 +44,11 @@ def supercell(gen=None,traj=None,x=1,y=1,z=1):
         images = Trajectory(traj)
         # A = images[-1]
         # build.make_supercell(A,[2,2,2])
+        his    = TrajectoryWriter(f'{traj.split(".")[0]}_{x}{y}{z}.traj',mode='w')
         for i,A in enumerate(images):
             # _,atoms = SuperCell(A,fac=1.0,supercell=[x,y,z])
             atoms   = A*(x,y,z)
             atoms.calc = SinglePointCalculator(atoms,energy=A.get_potential_energy()*x*y*z)
-            his    = TrajectoryWriter(f'{traj.split(".")[0]}_{x}{y}{z}.traj',mode='w')
             his.write(atoms=atoms)
         his.close()
 
