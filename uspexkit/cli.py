@@ -3,7 +3,7 @@
 import argparse
 import sys
 import numpy as np
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -21,6 +21,8 @@ COMMANDS = {
     "update": (update, "update a structure to data"),
     "info": (info, "Print energy and lattice information of a structure"),
     "fingerprint": (fingerprint, "Compute USPEX structural fingerprint (Cython accelerated)"),
+    "lib": (lib, "Convert ffield.json to reaxff_nn.lib"),
+    "ffield": (ffield, "Convert ffield.json to ReaxFF ffield"),
 }
 
 
@@ -162,6 +164,16 @@ def main():
     p_fp.add_argument("--soap-l-max", type=int, default=6,
                       help="SOAP maximum angular momentum")
 
+    # ── lib ──
+    p_lib = sub.add_parser("lib", help=COMMANDS["lib"][1])
+    p_lib.add_argument("--json", default="ffield.json", help="Path to ffield.json")
+    p_lib.add_argument("--lib", default="reaxff_nn.lib", help="Output lib file name")
+
+    # ── ffield ──
+    p_ffield = sub.add_parser("ffield", help=COMMANDS["ffield"][1])
+    p_ffield.add_argument("--json", default="ffield.json", help="Path to ffield.json")
+    p_ffield.add_argument("--ffield", default="ffield", help="Output ffield file name")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -217,4 +229,8 @@ def main():
                  intra_map=intra_map, soap=args.soap,
                  soap_r_cut=args.soap_r_cut, soap_n_max=args.soap_n_max,
                  soap_l_max=args.soap_l_max)
+    elif args.command == "lib":
+        cmd_func(jsonfile=args.json, libfile=args.lib)
+    elif args.command == "ffield":
+        cmd_func(jsonfile=args.json, ffieldfile=args.ffield)
 

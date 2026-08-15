@@ -28,4 +28,10 @@ def __getattr__(name):
     if name == "fingerprint":
         from uspexkit.core import fingerprint as _fingerprint
         return _fingerprint
+    if name == "lib":
+        from uspexkit.core import lib as _lib
+        return _lib
+    if name == "ffield":
+        from uspexkit.core import ffield as _ffield
+        return _ffield
     raise AttributeError(f"module 'uspexkit' has no attribute {name!r}")

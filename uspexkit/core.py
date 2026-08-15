@@ -1122,3 +1122,85 @@ def sample(ind="", t=None):
 
     traj_w.close()
 
+
+# ──────────────────────────────────────────────
+#  lib — 将 ffield.json 转换为 reaxff_nn.lib
+# ──────────────────────────────────────────────
+
+def lib(jsonfile="ffield.json", libfile="reaxff_nn.lib"):
+    """
+    Convert ffield.json to reaxff_nn.lib format.
+
+    Args:
+        jsonfile: path to ffield.json (default: ffield.json)
+        libfile:  output lib file name (default: reaxff_nn.lib)
+    """
+    import json as js
+    from irff.reaxfflib import write_lib
+
+    with open(jsonfile, "r") as lf:
+        j = js.load(lf)
+    p_ = j["p"]
+    m_ = j["m"]
+    vdw_layer = j.get("vdw_layer", None)
+    mf_layer = j.get("mf_layer", None)
+    be_layer = j.get("be_layer", None)
+
+    spec, bonds, offd, angs, torp, hbs = _init_bonds(p_)
+    write_lib(p_, spec, bonds, offd, angs, torp, hbs,
+              m=m_, mf_layer=mf_layer, be_layer=be_layer,
+              vdw_layer=vdw_layer, libfile=libfile)
+    print(f"✓  Converted {jsonfile} → {libfile}")
+
+
+def _init_bonds(p_):
+    """Categorize force-field parameters from JSON keys."""
+    spec, bonds, offd, angs, torp, hbs = [], [], [], [], [], []
+    for key in p_:
+        k = key.split("_")
+        if k[0] == "bo1":
+            bonds.append(k[1])
+        elif k[0] == "rosi":
+            kk = k[1].split("-")
+            if len(kk) == 2:
+                if kk[0] != kk[1]:
+                    offd.append(k[1])
+            elif len(kk) == 1:
+                spec.append(k[1])
+        elif k[0] == "theta0":
+            angs.append(k[1])
+        elif k[0] == "tor1":
+            torp.append(k[1])
+        elif k[0] == "rohb":
+            hbs.append(k[1])
+    return spec, bonds, offd, angs, torp, hbs
+
+
+# ──────────────────────────────────────────────
+#  ffield — 将 ffield.json 转换为 ffield
+# ──────────────────────────────────────────────
+
+def ffield(jsonfile="ffield.json", ffieldfile="ffield"):
+    """
+    Convert ffield.json to ReaxFF ffield format.
+
+    Args:
+        jsonfile:   path to ffield.json (default: ffield.json)
+        ffieldfile: output ffield file name (default: ffield)
+    """
+    import json as js
+    from irff.reaxfflib import write_ffield
+
+    with open(jsonfile, "r") as lf:
+        j = js.load(lf)
+    p_ = j["p"]
+    m_ = j["m"]
+    mf_layer = j.get("mf_layer", None)
+    be_layer = j.get("be_layer", None)
+
+    spec, bonds, offd, angs, torp, hbs = _init_bonds(p_)
+    write_ffield(p_, spec, bonds, offd, angs, torp, hbs,
+                 m=m_, mf_layer=mf_layer, be_layer=be_layer,
+                 libfile=ffieldfile)
+    print(f"✓  Converted {jsonfile} → {ffieldfile}")
+
