@@ -61,7 +61,6 @@ def read_individuals(individuals='Individuals',g=None):
 
 def search_structure(feature, D, tolerance=0.01):
     """Search for matching structure in feature database."""
-    import numpy as np
     if D.ndim == 2:
         res = np.sum(np.square(D - feature), axis=1)
         ind = np.where(res < tolerance)

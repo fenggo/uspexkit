@@ -138,6 +138,12 @@ def main():
     p_info.add_argument("--gen", default=None, help="Geometry file (e.g. POSCAR, gulp.cif)")
     p_info.add_argument("--traj", default=None, help="Trajectory file name")
     p_info.add_argument("--i", type=int, default=-1, help="Frame index (default: -1)")
+    p_info.add_argument("--symmetry", action="store_true", default=True,
+                        help="Perform pymatgen symmetry analysis (default: on)")
+    p_info.add_argument("--no-symmetry", action="store_false", dest="symmetry",
+                        help="Disable symmetry analysis")
+    p_info.add_argument("--symprec", type=float, default=0.1,
+                        help="Symmetry tolerance for pymatgen (default: 0.1)")
 
  # ── fingerprint ──
     p_fp = sub.add_parser("fingerprint", help=COMMANDS["fingerprint"][1])
@@ -214,7 +220,8 @@ def main():
     elif args.command == "update":
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,inde=args.i,ncpu=args.n)
     elif args.command == "info":
-        cmd_func(gen=args.gen, traj=args.traj, i=args.i)
+        cmd_func(gen=args.gen, traj=args.traj, i=args.i,
+                 symmetry=args.symmetry, symprec=args.symprec)
     elif args.command == "fingerprint":
         intra_map = None
         if args.intra_map:

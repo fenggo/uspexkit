@@ -854,13 +854,15 @@ def fdf(gen="poscar.gen", xcf="gga", i=-1):
 #  info - 打印能量与晶格常数信息
 # ──────────────────────────────────────────────
 
-def info(gen=None, traj=None, i=-1):
-    """Print energy and lattice information of a structure.
+def info(gen=None, traj=None, i=-1, symmetry=True, symprec=0.1):
+    """Print energy, lattice, and symmetry information of a structure.
 
     Args:
         gen: geometry file name (e.g. POSCAR, gulp.cif)
         traj: trajectory file name
         i: frame index (default: -1, last frame)
+        symmetry: if True, perform pymatgen symmetry analysis (default: True)
+        symprec: symmetry tolerance for pymatgen (default: 0.1)
     """
     if gen is not None:
         atoms = read(gen)
@@ -902,7 +904,59 @@ def info(gen=None, traj=None, i=-1):
     except Exception:
         print(f"\n─ Energy ─────────────────────────────────────")
         print("  (no energy data available)")
+
+    # ── Symmetry Analysis (pymatgen) ──
+    if symmetry:
+        _print_symmetry_info(atoms, symprec)
+
     print(f"──────────────────────────────────────────────\n")
+
+
+def _print_symmetry_info(atoms, symprec):
+    """Print symmetry analysis using pymatgen SpacegroupAnalyzer.
+
+    Args:
+        atoms: ASE Atoms object
+        symprec: symmetry tolerance for pymatgen
+    """
+    try:
+        from pymatgen.core import Structure
+        from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+    except ImportError:
+        print(f"\n─ Symmetry ───────────────────────────────────")
+        print("  (pymatgen not available — install pymatgen)")
+        return
+
+    try:
+        # Convert ASE Atoms → pymatgen Structure directly (no temp file)
+        struct = Structure.from_ase_atoms(atoms)
+
+        analyzer = SpacegroupAnalyzer(struct, symprec=symprec, angle_tolerance=5.0)
+
+        spg_symbol = analyzer.get_space_group_symbol()
+        spg_number = analyzer.get_space_group_number()
+        crystal_system = analyzer.get_crystal_system()
+        point_group = analyzer.get_point_group_symbol()
+        hall = analyzer.get_hall()
+        lattice_type = analyzer.get_lattice_type()
+        has_inversion = analyzer.is_laue()
+        num_sym_ops = len(analyzer.get_symmetry_operations())
+        sym_struct = analyzer.get_symmetrized_structure()
+
+        print(f"\n─ Symmetry (pymatgen, symprec={symprec}) ──────")
+        print(f"  Space Group (HM):    {spg_symbol}")
+        print(f"  Space Group Number:  {spg_number}")
+        print(f"  Hall Symbol:         {hall}")
+        print(f"  Crystal System:      {crystal_system}")
+        print(f"  Point Group:         {point_group}")
+        print(f"  Lattice Type:        {lattice_type}")
+        print(f"  Laue (inversion):    {'yes' if has_inversion else 'no'}")
+        print(f"  Symmetry Operations: {num_sym_ops}")
+        print(f"  Wyckoff Sites:       {len(sym_struct.wyckoff_symbols)}")
+
+    except Exception as e:
+        print(f"\n─ Symmetry ───────────────────────────────────")
+        print(f"  (analysis failed: {e})")
 
 
 # ──────────────────────────────────────────────
