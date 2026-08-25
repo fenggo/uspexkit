@@ -1260,3 +1260,83 @@ def ffield(jsonfile="ffield.json", ffieldfile="ffield"):
                  libfile=ffieldfile)
     print(f"✓  Converted {jsonfile} → {ffieldfile}")
 
+
+# ──────────────────────────────────────────────
+#  molinfo — 分子识别与原子分组信息
+# ──────────────────────────────────────────────
+
+def molinfo(gen="data.traj", i=-1, jsonfile=None, verbose=True):
+    """
+    Print molecule atom indices for each molecule in the structure.
+
+    Uses the IRFF Molecules module to identify molecules based on bond
+    cutoffs from ffield.json (or defaults for CHON systems).
+
+    Args:
+        gen:      geometry file (ASE-readable: traj, POSCAR, xyz, lammps-data, etc.)
+        i:        frame index in trajectory (default: -1 = last frame)
+        jsonfile: path to ffield.json for rcutBond parameters (optional)
+        verbose:  print molecule boundary info (default: True)
+    """
+    import json as js
+    from ase.io import read
+    from irff.molecule import Molecules, press_mol
+
+    # ── Load structure ──
+    if gen.endswith('.lammps') or gen.endswith('.lammps-data'):
+        atoms = read(gen, format='lammps-data', atom_style='charge')
+    else:
+        atoms = read(gen, index=i)
+
+    atoms = press_mol(atoms)
+
+    # ── Build rcut dict from ffield.json or use defaults ──
+    rcut = {}
+    if jsonfile is not None:
+        try:
+            with open(jsonfile, 'r') as lf:
+                j = js.load(lf)
+            rcut = j.get('rcutBond', {})
+            if verbose:
+                print(f"# Loaded bond cutoffs from {jsonfile}")
+        except FileNotFoundError:
+            if verbose:
+                print(f"# Warning: {jsonfile} not found, using defaults")
+        except Exception as e:
+            if verbose:
+                print(f"# Warning: failed to read {jsonfile}: {e}, using defaults")
+
+    if not rcut:
+        # Default rcut for CHON systems (ReaxFF-style)
+        rcut = {
+            "H-O": 1.2, "H-C": 1.2, "H-H": 0.8, "H-N": 1.2,
+            "O-N": 1.45, "O-C": 1.45, "O-O": 1.4,
+            "N-C": 1.68, "N-N": 1.68,
+            "C-C": 1.68,
+            "others": 1.8,
+        }
+        if verbose:
+            print("# Using default bond cutoffs for CHON systems")
+
+    if verbose:
+        print(f"# rcut: {rcut}")
+        print(f"# Total atoms: {len(atoms)}")
+        print(f"# Species: {sorted(set(atoms.get_chemical_symbols()))}")
+
+    # ── Identify molecules ──
+    mols = Molecules(atoms, rcut=rcut, check=True)
+    nmol = len(mols)
+
+    if verbose:
+        print(f"# Number of molecules: {nmol}")
+
+    # ── Print molecule atom indices (1-based for LAMMPS compatibility) ──
+    for i_mol, mol in enumerate(mols):
+        idx = np.array(mol.mol_index) + 1  # 1-based
+        nat = len(idx)
+        if verbose:
+            print(f"# Mol {i_mol+1}: {nat} atoms")
+        print(' '.join(str(x) for x in idx))
+
+    return mols
+

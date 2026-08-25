@@ -3,7 +3,7 @@
 import argparse
 import sys
 import numpy as np
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield,molinfo
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -23,6 +23,7 @@ COMMANDS = {
     "fingerprint": (fingerprint, "Compute USPEX structural fingerprint (Cython accelerated)"),
     "lib": (lib, "Convert ffield.json to reaxff_nn.lib"),
     "ffield": (ffield, "Convert ffield.json to ReaxFF ffield"),
+    "molinfo": (molinfo, "Print molecule atom indices for LAMMPS/COLVARS"),
 }
 
 
@@ -180,6 +181,16 @@ def main():
     p_ffield.add_argument("--json", default="ffield.json", help="Path to ffield.json")
     p_ffield.add_argument("--ffield", default="ffield", help="Output ffield file name")
 
+    # ── molinfo ──
+    p_molinfo = sub.add_parser("molinfo", help=COMMANDS["molinfo"][1])
+    p_molinfo.add_argument("--g", "--gen", dest="gen", default="data.traj",
+                           help="Geometry file (ASE-readable: traj, POSCAR, lammps-data, etc.)")
+    p_molinfo.add_argument("--i", type=int, default=-1, help="Frame index (default: -1)")
+    p_molinfo.add_argument("--json", dest="jsonfile", default=None,
+                           help="Path to ffield.json for bond cutoffs (optional)")
+    p_molinfo.add_argument("--quiet", action="store_true", default=False,
+                           help="Suppress verbose output (print only atom indices)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -240,4 +251,7 @@ def main():
         cmd_func(jsonfile=args.json, libfile=args.lib)
     elif args.command == "ffield":
         cmd_func(jsonfile=args.json, ffieldfile=args.ffield)
+    elif args.command == "molinfo":
+        cmd_func(gen=args.gen, i=args.i, jsonfile=args.jsonfile,
+                 verbose=not args.quiet)
 

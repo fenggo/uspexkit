@@ -34,4 +34,7 @@ def __getattr__(name):
     if name == "ffield":
         from uspexkit.core import ffield as _ffield
         return _ffield
+    if name == "molinfo":
+        from uspexkit.core import molinfo as _molinfo
+        return _molinfo
     raise AttributeError(f"module 'uspexkit' has no attribute {name!r}")
