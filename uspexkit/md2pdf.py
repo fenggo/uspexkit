@@ -39,7 +39,9 @@ for _subfont, _name in [(0, _CJK_FONT_NAME), (2, _CJK_MONO_NAME)]:
         try:
             pdfmetrics.registerFont(TTFont(_name, _CJK_FONT_FILE, subfontIndex=0))
         except Exception:
-            _alt = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+            # _alt = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+            # _CJK_FONT_NAME = 'Helvetica'
+            _alt = 'Courier'
             pdfmetrics.registerFont(TTFont(_name, _alt, subfontIndex=0))
 
 
