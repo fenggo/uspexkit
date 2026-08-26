@@ -191,11 +191,12 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
        else:
           density_ = density_rf[0]
 
-    indi = read_individuals(individuals=f'../{ref}/Individuals')  # g
-    if indi:
-       id_ = indi[-1][0] + 1
-    else:
-       id_ = 1
+    # 用 gp.csv 行数获取下一个晶体 ID（替代解析整个 Individuals 文件）
+    try:
+        with open('gp.csv') as f:
+            id_ = sum(1 for _ in f)
+    except FileNotFoundError:
+        id_ = 1
            
     if dft:
        data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
