@@ -4,6 +4,7 @@ import argparse
 import sys
 import numpy as np
 from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield,molinfo
+from uspexkit.md2pdf import md2pdf
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -24,6 +25,7 @@ COMMANDS = {
     "lib": (lib, "Convert ffield.json to reaxff_nn.lib"),
     "ffield": (ffield, "Convert ffield.json to ReaxFF ffield"),
     "molinfo": (molinfo, "Print molecule atom indices for LAMMPS/COLVARS"),
+    "md2pdf": (md2pdf, "Convert Markdown to PDF"),
 }
 
 
@@ -191,6 +193,11 @@ def main():
     p_molinfo.add_argument("--quiet", action="store_true", default=False,
                            help="Suppress verbose output (print only atom indices)")
 
+    # ── md2pdf ──
+    p_md2pdf = sub.add_parser("md2pdf", help=COMMANDS["md2pdf"][1])
+    p_md2pdf.add_argument("--i", dest="input", required=True,
+                          help="Input file (with or without .md extension)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -254,4 +261,6 @@ def main():
     elif args.command == "molinfo":
         cmd_func(gen=args.gen, i=args.i, jsonfile=args.jsonfile,
                  verbose=not args.quiet)
+    elif args.command == "md2pdf":
+        cmd_func(input=args.input)
 

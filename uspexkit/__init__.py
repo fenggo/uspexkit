@@ -37,4 +37,7 @@ def __getattr__(name):
     if name == "molinfo":
         from uspexkit.core import molinfo as _molinfo
         return _molinfo
+    if name == "md2pdf":
+        from uspexkit.md2pdf import md2pdf as _md2pdf
+        return _md2pdf
     raise AttributeError(f"module 'uspexkit' has no attribute {name!r}")
