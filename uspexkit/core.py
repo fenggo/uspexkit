@@ -122,7 +122,7 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
     return e
 
 
-def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,pop=100,ref='results1'):
+def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,pop=100,ref='results1',id_=None):
     ''' Gaussian Process '''
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
     run_gulp(n=n,inp='inp-grad')
@@ -191,12 +191,18 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
        else:
           density_ = density_rf[0]
 
-    # 用 gp.csv 行数获取下一个晶体 ID（替代解析整个 Individuals 文件）
-    try:
-        with open('gp.csv') as f:
-            id_ = sum(1 for _ in f)
-    except FileNotFoundError:
-        id_ = 1
+    # 晶体全局 ID：优先使用 USPEX submitJob 下发的 bodyCount+1（--id）；
+    # 未提供时回退到 Individuals 最后一行（兼容手动运行 uspexkit gp 的场景）
+    if id_ is not None:
+        id_ = int(id_)
+    else:
+        try:
+            last_line = subprocess.run(['tail', '-1', f'../{ref}/Individuals'],
+                                       capture_output=True, text=True,
+                                       check=True).stdout.split()
+            id_ = int(last_line[1]) + 1 if len(last_line) >= 2 and last_line[1].isdigit() else 1
+        except (subprocess.CalledProcessError, FileNotFoundError, IndexError, ValueError):
+            id_ = 1
            
     if dft:
        data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
