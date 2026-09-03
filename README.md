@@ -1,8 +1,8 @@
-# uspexkit — USPEX 晶体结构预测后处理工具
+# uspexkit — USPEX Crystal Structure Prediction Post-Processing Toolkit
 
-`uspexkit` 是 USPEX 分子晶体结构预测（计算类型 310）的后处理工具包，提供轨迹转换、特征提取、高斯过程预测、高通量 DFT 筛选、破损分子修复等功能。
+`uspexkit` is a post-processing toolkit for USPEX molecular crystal structure prediction (calculation type 310), providing trajectory conversion, feature extraction, Gaussian process prediction, high-throughput DFT screening, broken molecule repair, and more.
 
-## 安装
+## Installation
 
 ```bash
 git clone https://github.com/FengGo/uspexkit.git
@@ -10,308 +10,308 @@ cd uspexkit
 pip install .
 ```
 
-依赖：`numpy>=1.20`, `scikit-learn>=1.0`, `ase>=3.22`，以及内部库 `irff`（提供 GULP / LAMMPS / SIESTA 接口）。
+Dependencies: `numpy>=1.20`, `scikit-learn>=1.0`, `ase>=3.22`, and the internal library `irff` (providing GULP / LAMMPS / SIESTA interfaces).
 
 ---
 
-## 命令总览
+## Command Overview
 
-| 命令 | 功能 |
-|------|------|
-| `traj` | 将 `gatheredPOSCARS` 转换为 ASE 轨迹文件 |
-| `calcdata` | 从轨迹批量计算晶体特征向量 |
-| `gp` | 高斯过程预测晶体密度（USPEX 流水线内调用） |
-| `pred` | 高斯过程 + 随机森林预测密度和能量 |
-| `calc` | 高通量 DFT（SIESTA）计算 + 结构匹配去重 |
-| `fixbroken` | 修复破损分子 |
-| `add` | 将单个结构添加到特征数据库 |
-| `addall` | 将轨迹中所有结构批量添加到特征数据库 |
-| `zmat` | 结构坐标转 USPEX Z-matrix 内坐标 |
-| `fdf` | 生成 SIESTA 输入文件 |
-| `sample` | 按索引采样结构输出到轨迹 |
-| `supercell` | 构建超胞 |
-| `fingerprint` | 计算 USPEX 分子结构指纹（Cython 加速） |
+| Command | Function |
+|---------|----------|
+| `traj` | Convert `gatheredPOSCARS` to ASE trajectory file |
+| `calcdata` | Batch compute crystal feature vectors from trajectories |
+| `gp` | Gaussian process prediction of crystal density (called within USPEX pipeline) |
+| `pred` | Predict density and energy using GP + Random Forest |
+| `calc` | High-throughput DFT (SIESTA) calculation + structure matching deduplication |
+| `fixbroken` | Repair broken molecules |
+| `add` | Add a single structure to the feature database |
+| `addall` | Batch add all structures from a trajectory to the feature database |
+| `zmat` | Convert structure coordinates to USPEX Z-matrix internal coordinates |
+| `fdf` | Generate SIESTA input files |
+| `sample` | Sample structures by index and output to a trajectory |
+| `supercell` | Build supercells |
+| `fingerprint` | Compute USPEX molecular structure fingerprints (Cython-accelerated) |
 
 ---
 
-## 1. `traj` — 轨迹转换
+## 1. `traj` — Trajectory Conversion
 
-将 USPEX 输出文件 `gatheredPOSCARS` 转换为 ASE `.traj` 轨迹文件，同时从 `Individuals` 文件中解析能量信息。
+Convert USPEX output file `gatheredPOSCARS` to ASE `.traj` trajectory file, while parsing energy information from the `Individuals` file.
 
 ```bash
 uspexkit traj [--fposcar FILE]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--fposcar` | `gatheredPOSCARS` | 输入 POSCAR 文件路径 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--fposcar` | `gatheredPOSCARS` | Input POSCAR file path |
 
-### 输出
+### Output
 
-- `Individuals.traj` — ASE 轨迹文件，包含所有结构及能量
+- `Individuals.traj` — ASE trajectory file containing all structures and energies
 
-### 工作原理
+### How It Works
 
-解析 `gatheredPOSCARS` 中的每个结构（以 `EA` 行分隔），写入 `POSCAR` 后用 ASE 读取，再从 `Individuals` 中匹配对应焓值写入 `SinglePointCalculator`。
+Parse each structure in `gatheredPOSCARS` (delimited by `EA` lines), write to `POSCAR` and read with ASE, then match corresponding enthalpy values from `Individuals` and write them into `SinglePointCalculator`.
 
 ---
 
-## 2. `calcdata` — 计算特征向量
+## 2. `calcdata` — Compute Feature Vectors
 
-从 ASE 轨迹中读取结构，通过 MLP（神经网络势）或 MTP（矩张量势）弛豫后，用 GULP 计算能量分解特征，输出到 CSV 数据库。
+Read structures from ASE trajectories, relax them via MLP (neural network potential) or MTP (moment tensor potential), then compute energy decomposition features using GULP and output to a CSV database.
 
 ```bash
 uspexkit calcdata [--t TRAJ] [--n NCPU] [--c CALC] [--step STEPS]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--t` | `structures.traj` | 输入轨迹文件 |
-| `--n` | `1` | 并行 CPU 数 |
-| `--c` | `nn` | 计算器类型：`nn`（神经网络反应势）或 `mtp`（MTP 势） |
-| `--step` | `1000` | MLP 弛豫步数 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--t` | `structures.traj` | Input trajectory file |
+| `--n` | `1` | Number of parallel CPU cores |
+| `--c` | `nn` | Calculator type: `nn` (neural network reactive potential) or `mtp` (MTP potential) |
+| `--step` | `1000` | MLP relaxation steps |
 
-### 输出
+### Output
 
-| 文件 | 内容 |
-|------|------|
-| `feature_mlp.csv` | 10 维特征（GULP 总能 + 能量分解 + 密度） |
-| `feature.csv` | 10 维特征（DFT 总能 + GULP 能量分解 + 密度） |
-| `structures_mlp.traj` | MLP 弛豫后的结构轨迹 |
+| File | Content |
+|------|---------|
+| `feature_mlp.csv` | 10-dimensional features (GULP total energy + energy decomposition + density) |
+| `feature.csv` | 10-dimensional features (DFT total energy + GULP energy decomposition + density) |
+| `structures_mlp.traj` | Structure trajectory after MLP relaxation |
 
-### 特征向量 (10 维)
+### Feature Vector (10 dimensions)
 
-| 维度 | 含义 |
-|------|------|
-| 0 | 总能 (etot) |
-| 1 | 键能 (ebond) |
-| 2 | 角能 (eang) |
-| 3 | 扭转能 (etor) |
-| 4 | 范德华能 (evdw) |
-| 5 | 氢键能 C-H-O (ehb_cho) |
-| 6 | 氢键能 C-H-N (ehb_chn) |
-| 7 | 氢键能 C-H-C (ehb_chc) |
-| 8 | 库仑能 (ecoul) |
-| 9 | 密度 (density) |
+| Dimension | Meaning |
+|-----------|---------|
+| 0 | Total energy (etot) |
+| 1 | Bond energy (ebond) |
+| 2 | Angle energy (eang) |
+| 3 | Torsion energy (etor) |
+| 4 | Van der Waals energy (evdw) |
+| 5 | Hydrogen bond energy C-H-O (ehb_cho) |
+| 6 | Hydrogen bond energy C-H-N (ehb_chn) |
+| 7 | Hydrogen bond energy C-H-C (ehb_chc) |
+| 8 | Coulomb energy (ecoul) |
+| 9 | Density (density) |
 
 ---
 
-## 3. `gp` — 高斯过程预测（USPEX 流水线）
+## 3. `gp` — Gaussian Process Prediction (USPEX Pipeline)
 
-在 USPEX 进化搜索内部调用：对当前结构做 GULP 梯度弛豫 → 提取特征 → GP + RF 预测密度/能量 → 将预测值写回 USPEX 输出格式。
+Called internally within USPEX evolutionary search: GULP gradient relaxation of the current structure → feature extraction → GP + RF prediction of density/energy → write predictions back to USPEX output format.
 
 ```bash
 uspexkit gp [--n NCPU] [--t TOL] [--step STEPS] [--b BROKEN] [--u UNCERT] [--f FEAT] [--data DIR] [--resf DIR]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--n` | `1` | 并行 CPU 数 |
-| `--t` | `0.005` | 结构匹配容差 |
-| `--step` | `1000` | MLP 弛豫步数 |
-| `--b` | `1.5` | 破损判断阈值：当前能量偏离均值超过此值视为破损 |
-| `--u` | `0.2` | GP 不确定性阈值 |
-| `--f` | `1` | 特征标志：`1` = 10 维（含氢键），其他 = 7 维 |
-| `--data` | `data` | 训练数据目录名 |
-| `--resf` | `results1` | 结果输出目录名 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--n` | `1` | Number of parallel CPU cores |
+| `--t` | `0.005` | Structure matching tolerance |
+| `--step` | `1000` | MLP relaxation steps |
+| `--b` | `1.5` | Broken molecule threshold: current energy deviating from mean by more than this value is considered broken |
+| `--u` | `0.2` | GP uncertainty threshold |
+| `--f` | `1` | Feature flag: `1` = 10-dimensional (with hydrogen bonds), other = 7-dimensional |
+| `--data` | `data` | Training data directory name |
+| `--resf` | `results1` | Results output directory name |
 
-### 输出
+### Output
 
-| 文件 | 内容 |
-|------|------|
-| `output` | USPEX 格式的能量输出 |
-| `optimized.structure` | USPEX 格式的优化结构 |
-| `gpr_density.pkl` / `gpr_energy.pkl` | 训练好的 GP 模型 |
-| `rfr_density.pkl` | 训练好的随机森林模型 |
-| `gp.csv` (在 `results1/` 下) | 预测日志 |
+| File | Content |
+|------|---------|
+| `output` | USPEX-format energy output |
+| `optimized.structure` | USPEX-format optimized structure |
+| `gpr_density.pkl` / `gpr_energy.pkl` | Trained GP models |
+| `rfr_density.pkl` | Trained Random Forest model |
+| `gp.csv` (under `results1/`) | Prediction log |
 
-### 工作原理
+### How It Works
 
-1. GULP 梯度弛豫当前结构
-2. 计算 10 维特征（含 C-H-O / C-H-N / C-H-C 氢键）
-3. 从训练数据目录加载 `feature_mlp.csv` / `feature.csv` / `structures.traj`
-4. 训练 GP 密度模型 + GP 能量模型 + RF 密度模型（首次训练后缓存为 `.pkl`）
-5. 对新结构预测密度和能量，输出到 USPEX 格式
-6. 若与最近邻残差 > 10 且 RF 预测偏差大，则回退到缩放修正
+1. GULP gradient relaxation of the current structure
+2. Compute 10-dimensional features (including C-H-O / C-H-N / C-H-C hydrogen bonds)
+3. Load `feature_mlp.csv` / `feature.csv` / `structures.traj` from the training data directory
+4. Train GP density model + GP energy model + RF density model (cached as `.pkl` after first training)
+5. Predict density and energy for new structures, output in USPEX format
+6. If the residual with nearest neighbor > 10 and RF prediction deviation is large, fall back to scaling correction
 
 ---
 
-## 4. `pred` — 预测密度/能量
+## 4. `pred` — Predict Density/Energy
 
-对指定结构（按索引或 POSCAR 文件）预测密度和能量，使用已训练的 GP + RF 模型。
+Predict density and energy for specified structures (by index or POSCAR file) using trained GP + RF models.
 
 ```bash
 uspexkit pred [--t TRAJ] [--g GEO] [--f FEAT] [--den DENSITY] [--ids IDS] [--x INDEX] [--c CALC] [--step STEPS] [--ncpu NCPU] [--dat DIR] [--tolerance TOL]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--t` | `Individuals.traj` | 轨迹文件 |
-| `--g` | `None` | 几何结构文件（如 `POSCAR`），指定后直接预测该文件 |
-| `--f` | `1` | 特征标志：`1` = 10 维（含氢键），其他 = 7 维 |
-| `--den` | `1.88` | 密度阈值：只预测密度高于此值的结构 |
-| `--ids` | `None` | 晶体索引（空格分隔），如 `"214 215"` |
-| `--x` | `-1` | 单个结构索引（`-1` 表示最后一个） |
-| `--c` | `nn` | 计算器：`nn`（神经网络势）或 `mtp`（MTP 势） |
-| `--step` | `300` | MLP 弛豫步数 |
-| `--ncpu` | `8` | 并行 CPU 数 |
-| `--dat` | `data` | 训练数据目录名 |
-| `--tolerance` | `0.001` | 结构匹配容差 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--t` | `Individuals.traj` | Trajectory file |
+| `--g` | `None` | Geometry file (e.g., `POSCAR`); if specified, predict directly from this file |
+| `--f` | `1` | Feature flag: `1` = 10-dimensional (with hydrogen bonds), other = 7-dimensional |
+| `--den` | `1.88` | Density threshold: only predict structures with density above this value |
+| `--ids` | `None` | Crystal indices (space-separated), e.g., `"214 215"` |
+| `--x` | `-1` | Single structure index (`-1` means the last one) |
+| `--c` | `nn` | Calculator: `nn` (neural network potential) or `mtp` (MTP potential) |
+| `--step` | `300` | MLP relaxation steps |
+| `--ncpu` | `8` | Number of parallel CPU cores |
+| `--dat` | `data` | Training data directory name |
+| `--tolerance` | `0.001` | Structure matching tolerance |
 
-### 输出
+### Output
 
-- `density_predict.log` — 预测日志，每行包含：结构ID、残差、密度（MLP/RF/GP）、GP 不确定性、能量预测
+- `density_predict.log` — Prediction log, each line contains: structure ID, residual, density (MLP/RF/GP), GP uncertainty, energy prediction
 
-### 使用示例
+### Usage Examples
 
 ```bash
-# 预测指定索引的结构
+# Predict structures with specified indices
 uspexkit pred --ids="214 215" --n=24 --dat=data11_44
 
-# 从 POSCAR 文件预测
+# Predict from a POSCAR file
 uspexkit pred --g=POSCAR --n=24 --dat=data11_44
 ```
 
 ---
 
-## 5. `calc` — 高通量 DFT 计算
+## 5. `calc` — High-Throughput DFT Calculation
 
-对符合条件的结构执行 SIESTA DFT 计算，支持结构匹配去重（已计算过的结构自动跳过）。
+Perform SIESTA DFT calculations on qualifying structures, with structure matching deduplication (already-calculated structures are automatically skipped).
 
 ```bash
 uspexkit calc [--t TRAJ] [--den DENSITY] [--ids IDS] [--step STEPS] [--ncpu NCPU] [--dat DIR] [--tolerance TOL]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--t` | `Individuals.traj` | 轨迹文件 |
-| `--den` | `1.88` | 密度阈值：只计算密度高于此值的结构 |
-| `--ids` | `None` | 晶体索引（空格分隔） |
-| `--step` | `300` | GULP 弛豫步数 |
-| `--ncpu` | `8` | 并行 CPU 数 |
-| `--dat` | `data` | 训练数据目录名 |
-| `--tolerance` | `0.01` | 结构匹配容差 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--t` | `Individuals.traj` | Trajectory file |
+| `--den` | `1.88` | Density threshold: only calculate structures with density above this value |
+| `--ids` | `None` | Crystal indices (space-separated) |
+| `--step` | `300` | GULP relaxation steps |
+| `--ncpu` | `8` | Number of parallel CPU cores |
+| `--dat` | `data` | Training data directory name |
+| `--tolerance` | `0.01` | Structure matching tolerance |
 
-### 输出
+### Output
 
-- `density.log` — 计算日志
-- `{id}/` — 每个结构的独立工作目录，包含 DFT 输入输出
-- `{id}/POSCAR.{id}` — 原始结构
-- `{id}/POSCAR.{id}_opt` — DFT 优化后结构
-- `{id}/id_{id}.traj` — DFT 优化轨迹
+- `density.log` — Calculation log
+- `{id}/` — Independent working directory for each structure, containing DFT input/output
+- `{id}/POSCAR.{id}` — Original structure
+- `{id}/POSCAR.{id}_opt` — DFT-optimized structure
+- `{id}/id_{id}.traj` — DFT optimization trajectory
 
-### 工作原理
+### How It Works
 
-1. 从 `Individuals` 读取结构列表，筛选 `density > den` 且 `fitness < 0` 的结构
-2. 对每个结构：GULP 弛豫 → 计算 10 维特征 → 与数据库匹配
-3. 若匹配到已知结构（残差 < tolerance）：直接复用已有 DFT 结果
-4. 若未匹配：执行 SIESTA DFT 优化（GGA-PBE），并将结果追加到数据库
+1. Read structure list from `Individuals`, filter structures with `density > den` and `fitness < 0`
+2. For each structure: GULP relaxation → compute 10-dimensional features → match against database
+3. If a known structure is matched (residual < tolerance): directly reuse existing DFT results
+4. If unmatched: execute SIESTA DFT optimization (GGA-PBE), and append results to the database
 
 ---
 
-## 6. `fixbroken` — 修复破损分子
+## 6. `fixbroken` — Repair Broken Molecules
 
-检测当前结构是否破损（能量偏离均值超过阈值），若破损则通过扩大晶胞并重新弛豫尝试修复。
+Detect whether the current structure is broken (energy deviation from mean exceeds threshold), and if so, attempt repair by expanding the unit cell and re-relaxing.
 
 ```bash
 uspexkit fixbroken [--n NCPU] [--data DIR] [--s SCALE] [--b BROKEN]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--n` | `1` | 并行 CPU 数 |
-| `--data` | `data` | 训练数据目录名 |
-| `--s` | `1.2` | 晶胞放大因子（每次迭代乘以该值） |
-| `--b` | `1.5` | 破损判断阈值（eV）：当前能量偏离训练数据均值超过此值视为破损 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--n` | `1` | Number of parallel CPU cores |
+| `--data` | `data` | Training data directory name |
+| `--s` | `1.2` | Unit cell scaling factor (multiplied each iteration) |
+| `--b` | `1.5` | Broken threshold (eV): current energy deviating from training data mean by more than this value is considered broken |
 
-### 输出
+### Output
 
-- `output` — USPEX 格式能量输出
-- `optimized.structure` — 优化后结构
+- `output` — USPEX-format energy output
+- `optimized.structure` — Optimized structure
 
-### 工作原理
+### How It Works
 
-1. GULP 梯度弛豫当前结构
-2. 若 `E_mean_train - E_current > broken`：读取分子片段 → 逐步放大晶胞（×1.2，最多 15 次）→ 重新弛豫直到能量恢复正常
-3. 若未破损：首次运行时会识别并缓存分子片段（`molecule.pkl`）
+1. GULP gradient relaxation of the current structure
+2. If `E_mean_train - E_current > broken`: read molecular fragments → gradually expand the unit cell (×1.2, up to 15 iterations) → re-relax until energy returns to normal
+3. If not broken: identify and cache molecular fragments (`molecule.pkl`) on first run
 
 ---
 
-## 7. `add` — 添加单个结构
+## 7. `add` — Add a Single Structure
 
-将单个结构（DFT 优化后的）追加到特征数据库。
+Append a single DFT-optimized structure to the feature database.
 
 ```bash
 uspexkit add [--t TRAJ] [--i INDEX] [--s STEPS] [--tolerance TOL] [--n NCPU]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--t` | `structures.traj` | 轨迹文件 |
-| `--i` | `-1` | 结构索引（`-1` 表示最后一个） |
-| `--s` | `1000` | MLP 弛豫步数 |
-| `--tolerance` | `0.005` | 结构匹配容差（去重） |
-| `--n` | `1` | 并行 CPU 数 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--t` | `structures.traj` | Trajectory file |
+| `--i` | `-1` | Structure index (`-1` means the last one) |
+| `--s` | `1000` | MLP relaxation steps |
+| `--tolerance` | `0.005` | Structure matching tolerance (deduplication) |
+| `--n` | `1` | Number of parallel CPU cores |
 
-### 输出
+### Output
 
-更新 `feature_mlp.csv`、`feature.csv`、`structures_mlp.traj`、`structures.traj`。
+Updates `feature_mlp.csv`, `feature.csv`, `structures_mlp.traj`, `structures.traj`.
 
 ---
 
-## 8. `addall` — 批量添加结构
+## 8. `addall` — Batch Add Structures
 
-将轨迹中所有结构批量追加到特征数据库。
+Batch append all structures from a trajectory to the feature database.
 
 ```bash
 uspexkit addall [--t TRAJ] [--s STEPS] [--tolerance TOL] [--n NCPU]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--t` | `structures.traj` | 输入轨迹文件 |
-| `--s` | `1000` | MLP 弛豫步数 |
-| `--tolerance` | `0.005` | 结构匹配容差（去重） |
-| `--n` | `1` | 并行 CPU 数 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--t` | `structures.traj` | Input trajectory file |
+| `--s` | `1000` | MLP relaxation steps |
+| `--tolerance` | `0.005` | Structure matching tolerance (deduplication) |
+| `--n` | `1` | Number of parallel CPU cores |
 
 ---
 
-## 9. `zmat` — Z-matrix 内坐标
+## 9. `zmat` — Z-matrix Internal Coordinates
 
-将笛卡尔坐标结构转换为 USPEX 格式的 Z-matrix 内坐标文件（`MOL_*`）。
+Convert Cartesian coordinate structures to USPEX-format Z-matrix internal coordinate files (`MOL_*`).
 
 ```bash
 uspexkit zmat [--geo GEO] [--i INDEX]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--geo` | `POSCAR` | 输入几何文件 |
-| `--i` | `-1` | 帧索引（`-1` = 最后一帧） |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--geo` | `POSCAR` | Input geometry file |
+| `--i` | `-1` | Frame index (`-1` = last frame) |
 
-### 输出
+### Output
 
-- USPEX 格式的 `MOL_*` 内坐标文件
+- USPEX-format `MOL_*` internal coordinate files
 
-### 使用示例
+### Usage Example
 
 ```bash
 uspexkit zmat --g=POSCAR
@@ -319,194 +319,196 @@ uspexkit zmat --g=POSCAR
 
 ---
 
-## 10. `fdf` — 生成 SIESTA 输入
+## 10. `fdf` — Generate SIESTA Input
 
-从结构文件生成 SIESTA DFT 的 `.fdf` 输入文件。
+Generate SIESTA DFT `.fdf` input files from structure files.
 
 ```bash
 uspexkit fdf [--gen GEN] [--xcf XCF] [--i INDEX]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--gen` | `poscar.gen` | 输入 `.gen` 格式结构文件 |
-| `--xcf` | `gga` | 交换关联泛函：`gga`（GGA-PBE）或 `vdw`（VDW-DRSLL） |
-| `--i` | `-1` | 帧索引 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--gen` | `poscar.gen` | Input `.gen` format structure file |
+| `--xcf` | `gga` | Exchange-correlation functional: `gga` (GGA-PBE) or `vdw` (VDW-DRSLL) |
+| `--i` | `-1` | Frame index |
 
 ---
 
-## 11. `sample` — 采样结构
+## 11. `sample` — Sample Structures
 
-按索引从轨迹或 DFT 结果目录中提取指定结构。
+Extract specified structures by index from a trajectory or DFT results directory.
 
 ```bash
 uspexkit sample [--ind INDICES] [--t TRAJ]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--ind` | `""` | 结构索引（空格分隔），如 `"0 5 12"` |
-| `--t` | `None` | 轨迹文件路径。若指定则从轨迹中提取；若不指定则从 `{i}/POSCAR.{i}_opt` 中读取 |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--ind` | `""` | Structure indices (space-separated), e.g., `"0 5 12"` |
+| `--t` | `None` | Trajectory file path. If specified, extract from the trajectory; otherwise read from `{i}/POSCAR.{i}_opt` |
 
-### 输出
+### Output
 
-- `samples.traj` — 采样的结构轨迹
+- `samples.traj` — Sampled structure trajectory
 
 ---
 
-## 12. `supercell` — 构建超胞
+## 12. `supercell` — Build Supercells
 
-从结构或轨迹构建超胞。
+Build supercells from structures or trajectories.
 
 ```bash
 uspexkit supercell [--x NX] [--y NY] [--z NZ] [--t TRAJ] [--g GEO]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--x` | `1` | X 方向倍数 |
-| `--y` | `1` | Y 方向倍数 |
-| `--z` | `1` | Z 方向倍数 |
-| `--t` | `None` | 轨迹文件（取最后一帧） |
-| `--g` | `None` | 几何文件（如 `POSCAR`） |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--x` | `1` | X-direction multiplier |
+| `--y` | `1` | Y-direction multiplier |
+| `--z` | `1` | Z-direction multiplier |
+| `--t` | `None` | Trajectory file (takes the last frame) |
+| `--g` | `None` | Geometry file (e.g., `POSCAR`) |
 
-### 输出
+### Output
 
-- 若指定 `--g`：输出 `POSCAR.supercell_{x}_{y}_{z}`
-- 若指定 `--t`：输出 `{traj_name}_{x}{y}{z}.traj`，能量按体积比例缩放
+- If `--g` is specified: outputs `POSCAR.supercell_{x}_{y}_{z}`
+- If `--t` is specified: outputs `{traj_name}_{x}{y}{z}.traj`, energy scaled by volume ratio
 
 ---
 
-## 13. `fingerprint` - 分子结构指纹
+## 13. `fingerprint` — Molecular Structure Fingerprint
 
-使用 Cython 加速计算 USPEX 分子结构指纹（`makeMatrices` + `fingerprint_calc`），输出 `order`、`fing`、`atom_fing` 三个指纹数组。
+Compute USPEX molecular structure fingerprints using Cython-accelerated computation (`makeMatrices` + `fingerprint_calc`), outputting three fingerprint arrays: `order`, `fing`, and `atom_fing`.
 
 ```bash
 uspexkit fingerprint [--g GEO] [--traj TRAJ] [--i I] [--rmax RMAX] [--sigma SIGMA] [--delta DELTA] [--dimension DIM] [--output OUTPUT]
 ```
 
-### 参数
+### Parameters
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `--g` | `None` | 几何结构文件（如 `POSCAR`、`gulp.cif`），用 ASE 读取 |
-| `--traj` | `None` | 轨迹文件（与 `--g` 二选一） |
-| `--i` | `-1` | 轨迹帧索引（`-1` = 最后一帧） |
-| `--rmax` | `12.0` | 近邻搜索截断半径 Rmax（Å） |
-| `--sigma` | `0.05` | 高斯展宽 σ |
-| `--delta` | `0.08` | 距离分箱宽度 δ（Å） |
-| `--dimension` | `3` | 维度：`3` = 3D 晶体，`0` = 团簇，`2` = 2D |
-| `--output` | `None` | 输出 `.npz` 文件路径（可选，不指定则仅打印摘要） |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--g` | `None` | Geometry file (e.g., `POSCAR`, `gulp.cif`), read with ASE |
+| `--traj` | `None` | Trajectory file (mutually exclusive with `--g`) |
+| `--i` | `-1` | Trajectory frame index (`-1` = last frame) |
+| `--rmax` | `12.0` | Neighbor search cutoff radius Rmax (Å) |
+| `--sigma` | `0.05` | Gaussian broadening σ |
+| `--delta` | `0.08` | Distance bin width δ (Å) |
+| `--dimension` | `3` | Dimensionality: `3` = 3D crystal, `0` = cluster, `2` = 2D |
+| `--output` | `None` | Output `.npz` file path (optional; if not specified, only prints summary) |
 
-### 输出
+### Output
 
-- 终端打印指纹统计信息（形状、最值、均值、耗时）
-- 若指定 `--output`：保存 `.npz` 文件，包含 `order`、`fing`、`atom_fing`、`V`、`n_pairs` 等数组
+- Terminal prints fingerprint statistics (shape, min/max, mean, timing)
+- If `--output` is specified: saves a `.npz` file containing `order`, `fing`, `atom_fing`, `V`, `n_pairs`, and other arrays
 
-### 使用示例
+### Usage Examples
 
 ```bash
-# 从 POSCAR 计算指纹
+# Compute fingerprint from POSCAR
 uspexkit fingerprint --g=POSCAR
 
-# 自定义参数并保存结果
+# Custom parameters and save results
 uspexkit fingerprint --g=POSCAR --rmax=10.0 --sigma=0.07 --output=fp.npz
 
-# 从轨迹文件计算
+# Compute from trajectory file
 uspexkit fingerprint --traj=Individuals.traj --i=-1
 ```
 
-### 工作原理
+### How It Works
 
-1. 用 ASE 读取结构文件，提取晶格、分数坐标、元素种类和原子数
-2. 调用 Cython 加速模块 `uspex_fast_core.compute_all`：
-   - `build_distance_matrix`：构建近邻距离矩阵（替代 Octave `makeMatrices.m`）
-   - `fingerprint_calc`：计算 erf 展宽距离直方图指纹（替代 Octave `fingerprint_calc.m`）
-3. 输出三个指纹数组：
-   - `order` (N,)：每个原子的结构序参量（√(Σ weight·δ·atom_fing²/V^(1/3))）
-   - `fing` (S², numBins)：全局指纹矩阵（S = 元素种类数）
-   - `atom_fing` (N, S, numBins)：原子级指纹
+1. Read structure file with ASE, extracting lattice, fractional coordinates, element types, and atom counts
+2. Call the Cython-accelerated module `uspex_fast_core.compute_all`:
+   - `build_distance_matrix`: build neighbor distance matrix (replaces Octave `makeMatrices.m`)
+   - `fingerprint_calc`: compute erf-broadened distance histogram fingerprint (replaces Octave `fingerprint_calc.m`)
+3. Output three fingerprint arrays:
+   - `order` (N,): structural order parameter for each atom (√(Σ weight·δ·atom_fing²/V^(1/3)))
+   - `fing` (S², numBins): global fingerprint matrix (S = number of element types)
+   - `atom_fing` (N, S, numBins): atom-level fingerprint
 
 ---
 
-## 数据格式说明
+## Data Format Reference
 
-### 指纹计算输出 (`.npz`)
+### Fingerprint Output (`.npz`)
 
-`fingerprint --output` 生成的 `.npz` 文件包含以下数组：
+The `.npz` file generated by `fingerprint --output` contains the following arrays:
 
-| 键 | 形状 | 说明 |
-|------|------|------|
-| `order` | (N,) | 每个原子的结构序参量 |
-| `fing` | (S², numBins) | 全局指纹矩阵（S = 元素种类数） |
-| `atom_fing` | (N, S, numBins) | 原子级指纹 |
-| `V` | 标量 | 晶胞体积 |
-| `n_pairs` | 标量 | 近邻原子对数 |
-| `numIons` | (S,) | 各元素原子数 |
-| `atomType` | (S,) | 各元素原子序数 |
-| `rmax` / `sigma` / `delta` / `dimension` | 标量 | 计算参数 |
+| Key | Shape | Description |
+|-----|-------|-------------|
+| `order` | (N,) | Structural order parameter for each atom |
+| `fing` | (S², numBins) | Global fingerprint matrix (S = number of element types) |
+| `atom_fing` | (N, S, numBins) | Atom-level fingerprint |
+| `V` | scalar | Unit cell volume |
+| `n_pairs` | scalar | Number of neighbor atom pairs |
+| `numIons` | (S,) | Atom count per element type |
+| `atomType` | (S,) | Atomic number per element type |
+| `rmax` / `sigma` / `delta` / `dimension` | scalar | Computation parameters |
 
-### `feature_mlp.csv` (GULP 能量特征)
+### `feature_mlp.csv` (GULP Energy Features)
 
 ```
 , etot, ebond, eang, etor, evdw, ehb_cho, ehb_chn, ehb_chc, ecoul, density
 0, -123.45, -56.78, ...
 ```
 
-第一列为结构索引，后续为 10 维特征向量。
+The first column is the structure index, followed by the 10-dimensional feature vector.
 
-### `feature.csv` (DFT 能量 + GULP 分解)
+### `feature.csv` (DFT Energy + GULP Decomposition)
 
 ```
 , etot, ebond, eang, etor, evdw, ehb_cho, ehb_chn, ehb_chc, ecoul, density
 0, -234.56, -56.78, ...
 ```
 
-第一列为 DFT 总能（来自 `SinglePointCalculator`），后续为 GULP 分解能量。
+The first column is the DFT total energy (from `SinglePointCalculator`), followed by GULP decomposed energies.
 
-### GP 模型文件
+### GP Model Files
 
-- `gpr_density.pkl` — 高斯过程密度模型
-- `gpr_energy.pkl` — 高斯过程能量模型
-- `rfr_density.pkl` — 随机森林密度模型
+- `gpr_density.pkl` — Gaussian process density model
+- `gpr_energy.pkl` — Gaussian process energy model
+- `rfr_density.pkl` — Random Forest density model
 
-核函数：`0.00581² · DotProduct(σ₀=0.412) + 0.35² · Matern(ν=2.5, ARD) + WhiteKernel`
+Kernel: `0.00581² · DotProduct(σ₀=0.412) + 0.35² · Matern(ν=2.5, ARD) + WhiteKernel`
 
 ---
 
-## 典型工作流
+## Typical Workflows
 
-### 1. 构建训练数据库
+### 1. Build Training Database
 
 ```bash
-# 从 DFT 结果生成特征数据库
+# Generate feature database from DFT results
 uspexkit calcdata --t=structures.traj --n=24
 
-# 或手动添加结构
+# Or manually add structures
 uspexkit add --t=structures.traj --i=-1 --n=24
 ```
 
-### 2. 进化搜索中预测
+### 2. Predict During Evolutionary Search
 
-在 USPEX 的 `command` 中配置：
+Configure in USPEX's `command`:
+
 ```bash
 uspexkit gp --n=24 --data=data11_44 --resf=results1
 ```
 
-### 3. 高通量 DFT 筛选
+### 3. High-Throughput DFT Screening
 
 ```bash
 uspexkit calc --n=24 --den=1.88 --dat=data11_44
 ```
 
-### 4. 破损分子修复
+### 4. Broken Molecule Repair
 
 ```bash
 uspexkit fixbroken --n=24 --data=data11_44 --b=1.5
 ```
+
