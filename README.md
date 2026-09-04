@@ -511,4 +511,3 @@ uspexkit calc --n=24 --den=1.88 --dat=data11_44
 ```bash
 uspexkit fixbroken --n=24 --data=data11_44 --b=1.5
 ```
-
