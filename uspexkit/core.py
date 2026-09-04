@@ -122,7 +122,7 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
     return e
 
 
-def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,pop=100,ref='results1',id_=None):
+def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,pop=100,ref='results1',id_=None,k=1):
     ''' Gaussian Process '''
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
     run_gulp(n=n,inp='inp-grad')
