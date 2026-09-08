@@ -102,6 +102,8 @@ def main():
     p_gp.add_argument("--ref", default='results1', help="results file directory")
     p_gp.add_argument("--k", type=int, default=1,
                       help="Top-K crystals for EI active learning (default: 1)")
+    p_gp.add_argument("--mode", default="ei",
+                      help="Selection mode for active learning: ei, random, uncertainty (default: ei)")
     p_gp.add_argument("--id", type=int, default=None,
                       help="crystal global ID (bodyCount+1) passed by USPEX submitJob")
 
@@ -230,7 +232,7 @@ def main():
     elif args.command == "gp":
         cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,
                  dft=args.dft,pop=args.pop,
-                 dat=args.data,ref=args.ref,id_=args.id,k=args.k)
+                 dat=args.data,ref=args.ref,id_=args.id,k=args.k,mode=args.mode)
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
     elif args.command == "add":
