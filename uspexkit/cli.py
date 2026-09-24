@@ -40,6 +40,7 @@ def main():
     p_pred = sub.add_parser("pred", help=COMMANDS["pred"][1])
     p_pred.add_argument("--t", default="Individuals.traj", help="Trajectory file")
     p_pred.add_argument("--g", type=str, default=None, help="geometry structure")
+    p_pred.add_argument("--gen", type=int, default=None, help="Generation number")
     p_pred.add_argument("--f", type=int, default=1, help="Feature flag (1=8D)")
     p_pred.add_argument("--x", type=int, default=-1, help="index")
     p_pred.add_argument("--den", type=float, default=1.88, help="Density threshold")
@@ -59,6 +60,7 @@ def main():
     p_calc.add_argument("--ncpu", type=int, default=8, help="Number of CPUs")
     p_calc.add_argument("--dat", default="data", help="Data directory name")
     p_calc.add_argument("--tolerance", type=float, default=0.01, help="Structure matching tolerance")
+    p_calc.add_argument("--gen", type=int, default=None, help="Generation number")
 
     # ── traj ──
     p_traj = sub.add_parser("traj", help=COMMANDS["traj"][1])
@@ -214,11 +216,11 @@ def main():
 
     # Map args to function kwargs
     if args.command == "pred":
-        cmd_func(t=args.t, g=args.g, f=args.f, den=args.den, ids=args.ids,x=args.x,
+        cmd_func(t=args.t, g=args.g, gen=args.gen, f=args.f, den=args.den, ids=args.ids,x=args.x,
                  c=args.c,step=args.step, ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance)
     elif args.command == "calc":
         cmd_func(t=args.t, den=args.den, ids=args.ids, step=args.step,
-                 ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance)
+                 ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance, gen=args.gen)
     elif args.command == "traj":
         cmd_func(fposcar=args.fposcar)
     elif args.command == "zmat":

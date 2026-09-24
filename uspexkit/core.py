@@ -468,14 +468,15 @@ def load_rfr(X, y):
 #  pred — 高斯过程预测
 # ──────────────────────────────────────────────
 
-def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,x=-1,
+def pred(t="Individuals.traj", g=None, gen=None, f=1, den=1.88, ids=None,x=-1,
          c='nn',step=300, ncpu=8, dat="data", tolerance=0.001):
     """
     Predict density and energy using Gaussian Process + MLP + RandomForest.
 
     Args:
         t: trajectory file name
-        g: generation number (None = latest)
+        g: geometry structure file name (None = use trajectory)
+        gen: generation number (None = latest)
         f: feature flag (1 = 8D feature, else 7D)
         den: density threshold
         ids: comma/space separated crystal indices
@@ -494,7 +495,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,x=-1,
        ids_list = [1]
     elif not ids:
         ids_list = []
-        res = read_individuals()  # g
+        res = read_individuals(g=gen)
         for i, e, d, _f in res:
             if d > den and _f < 0.0:
                 ids_list.append(i)
@@ -588,7 +589,7 @@ def pred(t="Individuals.traj", g=None, f=1, den=1.88, ids=None,x=-1,
 # ──────────────────────────────────────────────
 
 def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
-         ncpu=8, dat="data", tolerance=0.01):
+         ncpu=8, dat="data", tolerance=0.01, gen=None):
     """
     High-throughput DFT calculation with structure matching.
 
@@ -600,11 +601,12 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
         ncpu: number of CPUs
         dat: data directory name
         tolerance: structure matching tolerance
+        gen: generation number (None = latest generation)
     """
     images = Trajectory(t)
     if not ids:
         ids_list = []
-        res = read_individuals()
+        res = read_individuals(g=gen)
         for i, e, d, _f in res:
             if d > den and _f < 0.0:
                 ids_list.append(i)
