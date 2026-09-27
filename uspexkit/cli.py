@@ -5,6 +5,7 @@ import sys
 import numpy as np
 from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield,molinfo
 from uspexkit.md2pdf import md2pdf
+from uspexkit.denevo import denevo
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -26,6 +27,7 @@ COMMANDS = {
     "ffield": (ffield, "Convert ffield.json to ReaxFF ffield"),
     "molinfo": (molinfo, "Print molecule atom indices for LAMMPS/COLVARS"),
     "md2pdf": (md2pdf, "Convert Markdown to PDF"),
+    "denevo": (denevo, "Plot per-generation density evolution (GP/EI/DFT)"),
 }
 
 
@@ -206,6 +208,19 @@ def main():
     p_md2pdf.add_argument("--i", dest="input", required=True,
                           help="Input file (with or without .md extension)")
 
+    # ── denevo ──
+    p_denevo = sub.add_parser("denevo", help=COMMANDS["denevo"][1])
+    p_denevo.add_argument("--k", type=int, default=2,
+                          help="EI 选择个数 (默认 2)")
+    p_denevo.add_argument("--top", type=int, default=5,
+                          help="每代 GP 高密度 top-N (默认 5)")
+    p_denevo.add_argument("--last", type=int, default=None,
+                          help="只绘制最后 N 代")
+    p_denevo.add_argument("--gen-range", default=None, metavar="LO-HI",
+                          help="只绘制 LO~HI 代 (含端点), 例如 20-25")
+    p_denevo.add_argument("--out", default=None,
+                          help="输出前缀 (默认 ./gp_all_gens)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -271,4 +286,7 @@ def main():
                  verbose=not args.quiet)
     elif args.command == "md2pdf":
         cmd_func(input=args.input)
+    elif args.command == "denevo":
+        cmd_func(k=args.k, top=args.top, last=args.last,
+                 gen_range=args.gen_range, out=args.out)
 

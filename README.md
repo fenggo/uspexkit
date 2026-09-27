@@ -391,6 +391,11 @@ Compute USPEX molecular structure fingerprints using Cython-accelerated computat
 uspexkit fingerprint [--g GEO] [--traj TRAJ] [--i I] [--rmax RMAX] [--sigma SIGMA] [--delta DELTA] [--dimension DIM] [--output OUTPUT]
 ```
 
+## 14. `denevo` — Plot the density evolution
+uspexkit denevo                  # 全部代
+uspexkit denevo --last 5         # 最后 5 代
+uspexkit denevo --gen-range 20-25
+
 ### Parameters
 
 | Parameter | Default | Description |
