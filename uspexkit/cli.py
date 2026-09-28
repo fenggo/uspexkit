@@ -212,6 +212,9 @@ def main():
     # ── pack ──
     p_pack = sub.add_parser("pack", help=COMMANDS["pack"][1])
     p_pack.add_argument("--o", default="POSCARS", help="Output gathered POSCARS file")
+    p_pack.add_argument("--traj", default=None, help="ASE trajectory file (default: pack POSCAR.*)")
+    p_pack.add_argument("--range", default=None,
+                        help="Frame range for --traj: index (5), list (0,2,4) or slice (0:10 / 0:10:2)")
 
     # ── denevo ──
     p_denevo = sub.add_parser("denevo", help=COMMANDS["denevo"][1])
@@ -292,7 +295,7 @@ def main():
     elif args.command == "md2pdf":
         cmd_func(input=args.input)
     elif args.command == "pack":
-        cmd_func(output=args.o)
+        cmd_func(output=args.o, traj=args.traj, range_=args.range)
     elif args.command == "denevo":
         cmd_func(k=args.k, top=args.top, last=args.last,
                  gen_range=args.gen_range, out=args.out)

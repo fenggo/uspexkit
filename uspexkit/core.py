@@ -723,17 +723,78 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
 #  pack — gather POSCAR.* into USPEX POSCARS
 # ──────────────────────────────────────────────
 
-def pack(output="POSCARS"):
-    """
-    Pack POSCAR.* files in the current directory into a single USPEX-format
-    gatheredPOSCARS file.
+def _write_poscar_block(fposcars, atoms, id_str):
+    """Append one Atoms object to an open gatheredPOSCARS file handle.
 
-    Each ``POSCAR.<id>`` is converted to a canonical POSCAR via pymatgen and
-    appended with an ``EA<id>`` header carrying the lattice lengths/angles.
+    The structure is canonicalized through pymatgen (written to a transient
+    ``POSCAR``) and emitted with an ``EA<id>`` header carrying lattice info.
+    """
+    structure = AseAtomsAdaptor.get_structure(atoms)
+    structure.to(filename="POSCAR")
+    cell = atoms.get_cell()
+    angles = cell.angles()
+    lengths = cell.lengths()
+    with open("POSCAR", "r") as f:
+        lines = f.readlines()
+
+    card = False
+    for i, line in enumerate(lines):
+        if line.find("direct") >= 0:
+            card = True
+        if card and line.find("direct") < 0:
+            print(line[:-3], file=fposcars)
+        elif i == 0:
+            print("EA{:s} {:.6f} {:.6f} {:.6f} {:.3f} {:.3f} {:.3f} Sym.group: 1".format(id_str,
+                    lengths[0], lengths[1], lengths[2],
+                    angles[0], angles[1], angles[2]), file=fposcars)
+        else:
+            print(line[:-1], file=fposcars)
+
+
+def _parse_range(range_str):
+    """Parse a frame range into a list of 0-based integer indices.
+
+    Supports: a single index (``5``), a comma list (``0,2,4``) and a
+    Python-style slice (``start:stop`` or ``start:stop:step``).
+    """
+    range_str = range_str.strip()
+    if ":" in range_str:
+        parts = range_str.split(":")
+        start = int(parts[0]) if len(parts) > 0 and parts[0] else 0
+        stop = int(parts[1]) if len(parts) > 1 and parts[1] else None
+        step = int(parts[2]) if len(parts) > 2 and parts[2] else 1
+        if stop is None:
+            raise ValueError("range must specify a stop, e.g. 0:10")
+        return list(range(start, stop, step))
+    return [int(i) for i in range_str.replace(",", " ").split()]
+
+
+def pack(output="POSCARS", traj=None, range_=None):
+    """
+    Pack structures into a single USPEX-format gatheredPOSCARS file.
+
+    Two modes:
+      * ``traj=None`` (default): scan the current directory for ``POSCAR.*``
+        files and pack them (legacy behaviour).
+      * ``traj=<file>``: read the given ASE trajectory and pack the frames
+        selected by ``range_``.
 
     Args:
         output: gathered POSCARS output file name.
+        traj: ASE trajectory file name; None keeps the POSCAR.* behaviour.
+        range_: frame range for trajectory mode — an index (``5``), a comma
+            list (``0,2,4``) or a slice (``0:10`` / ``0:10:2``).
     """
+    if traj is not None:
+        if range_ is None:
+            raise ValueError("trajectory mode requires --range, e.g. --range=0:10")
+        indices = _parse_range(range_)
+        images = Trajectory(traj)
+        with open(output, "a") as fposcars:
+            for idx in indices:
+                _write_poscar_block(fposcars, images[idx], str(idx + 1))
+        return
+
     cdir = getcwd()
     poscars = sorted(f for f in listdir(cdir) if f.split(".")[0] == "POSCAR")
 
@@ -744,26 +805,7 @@ def pack(output="POSCARS"):
                 continue
             i_ = p_[1]
             atoms = read(p)
-            structure = AseAtomsAdaptor.get_structure(atoms)
-            structure.to(filename="POSCAR")
-            cell = atoms.get_cell()
-            angles = cell.angles()
-            lengths = cell.lengths()
-            with open("POSCAR", "r") as f:
-                lines = f.readlines()
-
-            card = False
-            for i, line in enumerate(lines):
-                if line.find("direct") >= 0:
-                    card = True
-                if card and line.find("direct") < 0:
-                    print(line[:-3], file=fposcars)
-                elif i == 0:
-                    print("EA{:s} {:.6f} {:.6f} {:.6f} {:.3f} {:.3f} {:.3f} Sym.group: 1".format(i_,
-                            lengths[0], lengths[1], lengths[2],
-                            angles[0], angles[1], angles[2]), file=fposcars)
-                else:
-                    print(line[:-1], file=fposcars)
+            _write_poscar_block(fposcars, atoms, i_)
 
 # ──────────────────────────────────────────────
 #  update structure
