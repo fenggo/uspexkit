@@ -3,7 +3,7 @@ import os
 import subprocess
 import pickle
 import numpy as np
-from os import getcwd, chdir, mkdir
+from os import getcwd, chdir, mkdir, listdir
 from os.path import exists
 
 from sklearn import preprocessing
@@ -23,6 +23,7 @@ from uspexkit.utils import (read_individuals, search_structure,generate_hbond_li
                             write_input,run_gulp, # add_structure,
                             lammps_opt_mtp,
                             write_output,write_geometry)
+from pymatgen.io.ase import AseAtomsAdaptor
 # from irff.md.lammps import writeLammpsData,writeLammpsIn,get_lammps_thermal,lammpstraj_to_ase
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
 # from irff.dft.dftb import dftb_opt
@@ -717,6 +718,52 @@ def calc(t="Individuals.traj", den=1.88, ids=None, step=500,
         chdir(root_dir)
         with open("density.log", "a") as fd:
             print(f"{s:5d} {density:10.6f} {energy:10.8f}", file=fd)
+
+# ──────────────────────────────────────────────
+#  pack — gather POSCAR.* into USPEX POSCARS
+# ──────────────────────────────────────────────
+
+def pack(output="POSCARS"):
+    """
+    Pack POSCAR.* files in the current directory into a single USPEX-format
+    gatheredPOSCARS file.
+
+    Each ``POSCAR.<id>`` is converted to a canonical POSCAR via pymatgen and
+    appended with an ``EA<id>`` header carrying the lattice lengths/angles.
+
+    Args:
+        output: gathered POSCARS output file name.
+    """
+    cdir = getcwd()
+    poscars = sorted(f for f in listdir(cdir) if f.split(".")[0] == "POSCAR")
+
+    with open(output, "a") as fposcars:
+        for p in poscars:
+            p_ = p.split(".")
+            if len(p_) <= 1:
+                continue
+            i_ = p_[1]
+            atoms = read(p)
+            structure = AseAtomsAdaptor.get_structure(atoms)
+            structure.to(filename="POSCAR")
+            cell = atoms.get_cell()
+            angles = cell.angles()
+            lengths = cell.lengths()
+            with open("POSCAR", "r") as f:
+                lines = f.readlines()
+
+            card = False
+            for i, line in enumerate(lines):
+                if line.find("direct") >= 0:
+                    card = True
+                if card and line.find("direct") < 0:
+                    print(line[:-3], file=fposcars)
+                elif i == 0:
+                    print("EA{:s} {:.6f} {:.6f} {:.6f} {:.3f} {:.3f} {:.3f} Sym.group: 1".format(i_,
+                            lengths[0], lengths[1], lengths[2],
+                            angles[0], angles[1], angles[2]), file=fposcars)
+                else:
+                    print(line[:-1], file=fposcars)
 
 # ──────────────────────────────────────────────
 #  update structure

@@ -3,7 +3,7 @@
 import argparse
 import sys
 import numpy as np
-from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield,molinfo
+from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield,molinfo,pack
 from uspexkit.md2pdf import md2pdf
 from uspexkit.denevo import denevo
 
@@ -26,6 +26,7 @@ COMMANDS = {
     "lib": (lib, "Convert ffield.json to reaxff_nn.lib"),
     "ffield": (ffield, "Convert ffield.json to ReaxFF ffield"),
     "molinfo": (molinfo, "Print molecule atom indices for LAMMPS/COLVARS"),
+    "pack": (pack, "Pack POSCAR.* files into a USPEX gatheredPOSCARS file"),
     "md2pdf": (md2pdf, "Convert Markdown to PDF"),
     "denevo": (denevo, "Plot per-generation density evolution (GP/EI/DFT)"),
 }
@@ -208,6 +209,10 @@ def main():
     p_md2pdf.add_argument("--i", dest="input", required=True,
                           help="Input file (with or without .md extension)")
 
+    # ── pack ──
+    p_pack = sub.add_parser("pack", help=COMMANDS["pack"][1])
+    p_pack.add_argument("--o", default="POSCARS", help="Output gathered POSCARS file")
+
     # ── denevo ──
     p_denevo = sub.add_parser("denevo", help=COMMANDS["denevo"][1])
     p_denevo.add_argument("--k", type=int, default=2,
@@ -286,6 +291,8 @@ def main():
                  verbose=not args.quiet)
     elif args.command == "md2pdf":
         cmd_func(input=args.input)
+    elif args.command == "pack":
+        cmd_func(output=args.o)
     elif args.command == "denevo":
         cmd_func(k=args.k, top=args.top, last=args.last,
                  gen_range=args.gen_range, out=args.out)
