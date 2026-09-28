@@ -228,6 +228,9 @@ def main():
                           help="只绘制 LO~HI 代 (含端点), 例如 20-25")
     p_denevo.add_argument("--out", default=None,
                           help="输出前缀 (默认 ./gp_all_gens)")
+    p_denevo.add_argument("--gp-csv", default=None,
+                          help="GP 数据源 gp.csv (默认自动定位 ../CalcFold1/gp.csv, "
+                               "回退 density_predict.log)")
 
     args = parser.parse_args()
 
@@ -298,5 +301,5 @@ def main():
         cmd_func(output=args.o, traj=args.traj, range_=args.range)
     elif args.command == "denevo":
         cmd_func(k=args.k, top=args.top, last=args.last,
-                 gen_range=args.gen_range, out=args.out)
+                 gen_range=args.gen_range, out=args.out, gp_csv=args.gp_csv)
 

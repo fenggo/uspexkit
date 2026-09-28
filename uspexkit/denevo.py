@@ -88,6 +88,36 @@ def parse_density_predict(path):
     return data
 
 
+def parse_gp_csv(path):
+    """Parse uspexkit gp's gp.csv → same dict shape as parse_density_predict.
+
+    Columns (0-based): 0=id, 1=neighbor, 2=residual, 3=density_min(dmlp),
+    4=density_rf, 5=density_gp, 6=uncertainty(=1.96*std), 7=energy_min,
+    8=eng_pred, 9=uncertainty_eng.
+    """
+    data = {}
+    if not os.path.exists(path):
+        return data
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith(","):
+                continue
+            p = [x.strip() for x in line.split(",")]
+            if len(p) < 7:
+                continue
+            try:
+                cid = int(float(p[0]))
+                residual = float(p[2]); dmlp = float(p[3]); drf = float(p[4])
+                dgp = float(p[5]); uncert = float(p[6])
+                eng = float(p[8]) if len(p) >= 9 else float("nan")
+            except ValueError:
+                continue
+            std = uncert / UNCERT_SCALE
+            data[cid] = (residual, dgp, std, dmlp, drf, eng)
+    return data
+
+
 def parse_density_log(path):
     """→ {id: (density, energy)}  (DFT)"""
     dft = {}
@@ -343,7 +373,7 @@ def report(per_gen, gen_ids, k=2, top=5):
 #  入口函数
 # -----------------------------------------------------------------------------
 
-def denevo(k=2, top=5, last=None, gen_range=None, out=None):
+def denevo(k=2, top=5, last=None, gen_range=None, out=None, gp_csv=None):
     """在当前 results* 目录中解析数据、画图、打印报告."""
     res_dir = os.getcwd()
     ind_path = os.path.join(res_dir, "Individuals")
@@ -355,8 +385,21 @@ def denevo(k=2, top=5, last=None, gen_range=None, out=None):
             f"{ind_path} 不存在 —— 请在 results* 目录内运行 uspexkit denevo")
 
     all_rows, gen_ids = parse_individuals(ind_path)
-    pred = parse_density_predict(pred_path)
+
+    # GP 数据源：显式 --gp-csv > 自动定位 ../CalcFold1/gp.csv > 旧 density_predict.log
+    if gp_csv is None:
+        auto_gp = os.path.join(res_dir, os.pardir, "CalcFold1", "gp.csv")
+        if os.path.exists(auto_gp):
+            gp_csv = auto_gp
+    if gp_csv:
+        pred = parse_gp_csv(gp_csv)
+        print(f"GP 数据源: {os.path.abspath(gp_csv)}")
+    else:
+        pred = parse_density_predict(pred_path)
+        print(f"GP 数据源: {pred_path}")
     dft = parse_density_log(dft_path)
+    if not dft:
+        print("DFT 结果: 无（不绘制 DFT 点）")
 
     # 代范围筛选: gen_range="LO-HI" 或 last=N
     if gen_range:
