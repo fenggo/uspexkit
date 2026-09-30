@@ -568,7 +568,7 @@ def pred(t="Individuals.traj", g=None, gen=None, f=1, den=1.88, ids=None,x=-1,
         # density_mlp  = mlp.predict(X_)[0]
 
         # if f == 1:
-        print(f"{s:5d} res: {res_}  "
+        print(f"{s:5d} {imin:5d} res: {res_}  "
               f"rf: {density_rf:7.4f}  "
               f"gp(den): {density_pred:7.4f} uncert: {std_den_pred:7.4f}  "
               f"gp(eng): {energy_pred:7.4f} uncert: {std_eng_pred:7.4f}" )
