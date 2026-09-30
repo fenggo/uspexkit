@@ -993,6 +993,9 @@ def info(gen=None, traj=None, i=-1, symmetry=True, symprec=0.1):
     print(f"  Volume  = {volume:12.4f} ų")
     print(f"  Density = {density:12.6f} g/cm³")
 
+    # ── Oxygen Balance (CHNO explosives) ──
+    _print_oxygen_balance(atoms)
+
     try:
         energy = atoms.get_potential_energy()
         print(f"\n─ Energy ─────────────────────────────────────")
@@ -1008,6 +1011,70 @@ def info(gen=None, traj=None, i=-1, symmetry=True, symprec=0.1):
         _print_symmetry_info(atoms, symprec)
 
     print(f"──────────────────────────────────────────────\n")
+
+
+def oxygen_balance(counts, products="CO2"):
+    """Oxygen balance of a CHNO explosive.
+
+    OB = -1600/M * (2*n_C + n_H/2 - n_O)   [%]
+
+    where n_C, n_H, n_O are atom counts in the molecular formula and M is
+    the molar mass (g/mol).  Assumes complete oxidation to CO2 + H2O;
+    positive OB means oxygen excess, negative means oxygen deficiency.
+
+    Args:
+        counts: dict mapping element symbol -> atom count (e.g. {'C': 6, 'H': 2, 'N': 2, 'O': 6})
+        products: 'CO2' (default, CO2 + H2O products) or 'CO' (CO + H2O products).
+            For the CO convention the carbon term is n_C instead of 2*n_C.
+
+    Returns:
+        OB percentage (float), or None if no C/H/O atoms present.
+    """
+    nC = counts.get("C", 0)
+    nH = counts.get("H", 0)
+    nO = counts.get("O", 0)
+    if nC + nH + nO == 0:
+        return None
+
+    atomic_mass = {"H": 1.00794, "C": 12.011, "N": 14.007, "O": 15.999}
+    molar_mass = sum(atomic_mass.get(el, _mass_of(el)) * n
+                     for el, n in counts.items())
+
+    c_need = nC if products == "CO" else 2 * nC
+    ob = -1600.0 / molar_mass * (c_need + nH / 2.0 - nO)
+    return ob
+
+
+def _mass_of(symbol):
+    """Fallback atomic mass lookup for elements beyond CHNO."""
+    from ase.data import atomic_masses, atomic_numbers
+    return atomic_masses[atomic_numbers[symbol]]
+
+
+def _print_oxygen_balance(atoms):
+    """Print oxygen balance for a structure (reduced to molecular formula)."""
+    symbols = atoms.get_chemical_symbols()
+    counts = {}
+    for s in symbols:
+        counts[s] = counts.get(s, 0) + 1
+
+    # reduce to the smallest integer formula unit (gcd of all counts)
+    from math import gcd
+    from functools import reduce
+    g = reduce(gcd, counts.values())
+    reduced = {el: n // g for el, n in counts.items()} if g > 1 else counts
+
+    ob_co2 = oxygen_balance(reduced, products="CO2")
+    ob_co = oxygen_balance(reduced, products="CO")
+    if ob_co2 is None:
+        return
+
+    formula_str = "".join(f"{el}{(n if n > 1 else '')}"
+                          for el, n in sorted(reduced.items()))
+    print(f"\n─ Oxygen Balance ─────────────────────────────")
+    print(f"  Molecular formula: {formula_str}  (unit-cell formula / {g})")
+    print(f"  OB (CO2 + H2O products): {ob_co2:8.2f} %")
+    print(f"  OB (CO  + H2O products): {ob_co:8.2f} %")
 
 
 def _print_symmetry_info(atoms, symprec):
