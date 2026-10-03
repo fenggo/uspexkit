@@ -31,6 +31,7 @@ Dependencies: `numpy>=1.20`, `scikit-learn>=1.0`, `ase>=3.22`, and the internal 
 | `sample` | Sample structures by index and output to a trajectory |
 | `supercell` | Build supercells |
 | `fingerprint` | Compute USPEX molecular structure fingerprints (Cython-accelerated) |
+| `pack` | Pack `POSCAR.*` files or trajectory frames into a USPEX `gatheredPOSCARS` file |
 
 ---
 
@@ -391,7 +392,46 @@ Compute USPEX molecular structure fingerprints using Cython-accelerated computat
 uspexkit fingerprint [--g GEO] [--traj TRAJ] [--i I] [--rmax RMAX] [--sigma SIGMA] [--delta DELTA] [--dimension DIM] [--output OUTPUT]
 ```
 
-## 14. `denevo` — Plot the density evolution
+## 14. `pack` — Pack Structures into gatheredPOSCARS
+
+Pack structures into a single USPEX-format `gatheredPOSCARS` file (the multi-structure POSCAR format USPEX reads, delimited by `EA<id>` headers). Two input modes are supported.
+
+```bash
+uspexkit pack [--o FILE] [--traj TRAJ] [--range RANGE]
+```
+
+### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--o` | `POSCARS` | Output gathered POSCARS file name |
+| `--traj` | `None` | ASE trajectory file. If omitted, scan the current directory for `POSCAR.*` files (legacy mode) |
+| `--range` | `None` | Frame range used with `--traj`: a single index (`5`), a comma list (`0,2,4`) or a Python-style slice (`0:10` / `0:10:2`). Required in trajectory mode |
+
+### Usage Examples
+
+```bash
+# Pack all POSCAR.* files in the current directory
+uspexkit pack
+
+# Pack frames 0–9 of a trajectory into gatheredPOSCARS
+uspexkit pack --traj=Individuals.traj --range=0:10
+
+# Pack selected frames with custom output name
+uspexkit pack --traj=Individuals.traj --range=0,2,4 --o=myPOSCARS
+```
+
+### How It Works
+
+1. **Legacy mode** (no `--traj`): collect sorted `POSCAR.*` files in the current directory.
+2. **Trajectory mode** (`--traj` + `--range`): parse the range into frame indices and read the selected ASE frames.
+3. Each structure is canonicalized through pymatgen and appended to the output file with an `EA<id>` header carrying the lattice lengths/angles, producing a file USPEX can ingest as `gatheredPOSCARS`.
+
+> Note: the output file is opened in append mode — delete an existing output file first if you want a fresh one rather than adding to it.
+
+---
+
+## 15. `denevo` — Plot the density evolution
 uspexkit denevo                  # 全部代
 uspexkit denevo --last 5         # 最后 5 代
 uspexkit denevo --gen-range 20-25
