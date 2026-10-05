@@ -50,7 +50,7 @@ def main():
     p_pred.add_argument("--ids", default=None, help="Crystal indices (space-separated)")
     p_pred.add_argument("--step", type=int, default=300, help="Optimization steps")
     p_pred.add_argument("--ncpu", type=int, default=8, help="Number of CPUs")
-    p_pred.add_argument("--dat", default="data", help="Data directory name")
+    p_pred.add_argument("--data", "--dat", dest="data", default="data", help="Data directory name")
     p_pred.add_argument("--tolerance", type=float, default=0.001, help="Structure matching tolerance")
     p_pred.add_argument("--c",type=str, default='nn', help="the calculator to be used, aviliable: nn, mtp")
 
@@ -61,7 +61,7 @@ def main():
     p_calc.add_argument("--ids", default=None, help="Crystal indices")
     p_calc.add_argument("--step", type=int, default=300, help="MD steps")
     p_calc.add_argument("--ncpu", type=int, default=8, help="Number of CPUs")
-    p_calc.add_argument("--dat", default="data", help="Data directory name")
+    p_calc.add_argument("--data", "--dat", dest="data", default="data", help="Data directory name")
     p_calc.add_argument("--tolerance", type=float, default=0.01, help="Structure matching tolerance")
     p_calc.add_argument("--gen", type=int, default=None, help="Generation number")
 
@@ -118,7 +118,7 @@ def main():
  # ── fixbroken ── 
     p_fixbroken = sub.add_parser("fixbroken", help=COMMANDS["fixbroken"][1])
     p_fixbroken.add_argument("--n", type=int, default=1, help="number cpu tobe used")
-    p_fixbroken.add_argument("--data", default='data', help="which data to be used")
+    p_fixbroken.add_argument("--data", "--dat", dest="data", default='data', help="which data to be used")
     p_fixbroken.add_argument("--s", type=float,default=1.2, help="scale factor")
     p_fixbroken.add_argument("--b", type=float,default=1.5, help="energy devate the mean tolerance that the structure is broken")
 
