@@ -275,10 +275,10 @@ def main():
     # Map args to function kwargs
     if args.command == "pred":
         cmd_func(t=args.t, g=args.g, gen=args.gen, f=args.f, den=args.den, ids=args.ids,x=args.x,
-                 c=args.c,step=args.step, ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance)
+                 c=args.c,step=args.step, ncpu=args.ncpu, dat=args.data, tolerance=args.tolerance)
     elif args.command == "calc":
         cmd_func(t=args.t, den=args.den, ids=args.ids, step=args.step,
-                 ncpu=args.ncpu, dat=args.dat, tolerance=args.tolerance, gen=args.gen)
+                 ncpu=args.ncpu, dat=args.data, tolerance=args.tolerance, gen=args.gen)
     elif args.command == "traj":
         cmd_func(fposcar=args.fposcar)
     elif args.command == "zmat":
