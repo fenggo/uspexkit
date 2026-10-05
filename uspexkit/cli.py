@@ -6,6 +6,7 @@ import numpy as np
 from uspexkit.core import pred, calc, traj, zmat, fdf, sample,calcdata,gp,fixbroken,add,addall,supercell,update,info,fingerprint,lib,ffield,molinfo,pack
 from uspexkit.md2pdf import md2pdf
 from uspexkit.denevo import denevo
+from uspexkit.smd import smd
 
 COMMANDS = {
     "pred": (pred, "Predict density/energy using Gaussian Process regression"),
@@ -29,6 +30,7 @@ COMMANDS = {
     "pack": (pack, "Pack POSCAR.* files into a USPEX gatheredPOSCARS file"),
     "md2pdf": (md2pdf, "Convert Markdown to PDF"),
     "denevo": (denevo, "Plot per-generation density evolution (GP/EI/DFT)"),
+    "smd": (smd, "SIESTA MD/optimization workflow (use one action flag: --opt/--fdf/--traj/--md/...)"),
 }
 
 
@@ -235,6 +237,33 @@ def main():
                           help="GP 数据源 gp.csv (默认自动定位 ../CalcFold1/gp.csv, "
                                "回退 density_predict.log)")
 
+    # ── smd ──
+    p_smd = sub.add_parser("smd", help=COMMANDS["smd"][1])
+    # action flags (exactly one must be given)
+    p_smd.add_argument("--opt", dest="opt", action="store_true", help="structure optimization")
+    p_smd.add_argument("--fdf", dest="fdf", action="store_true", help="write SIESTA fdf input only")
+    p_smd.add_argument("--traj", dest="traj", action="store_true", help="convert SIESTA run to ASE trajectory")
+    p_smd.add_argument("--md", dest="md", action="store_true", help="NVT molecular dynamics")
+    p_smd.add_argument("--npt", dest="npt", action="store_true", help="NPT molecular dynamics")
+    p_smd.add_argument("--pm", dest="pm", action="store_true", help="press molecule")
+    p_smd.add_argument("--mde", dest="mde", action="store_true", help="mean T/P from siesta.MDE")
+    p_smd.add_argument("--xv", dest="xv", action="store_true", help="convert siesta.XV to geo.gen")
+    p_smd.add_argument("--w", dest="w", action="store_true", help="write SIESTA input (VDW/DZP)")
+    # common options
+    p_smd.add_argument("--ncpu", "--n", dest="ncpu", type=int, default=20, help="CPU cores")
+    p_smd.add_argument("--T", type=float, default=300, help="temperature (K)")
+    p_smd.add_argument("--P", type=float, default=10.0, help="pressure (GPa, --npt)")
+    p_smd.add_argument("--us", default="F", help="unrestricted spin: F/U")
+    p_smd.add_argument("--tstep", type=int, default=50, help="MD number of steps")
+    p_smd.add_argument("--dt", type=float, default=1.0, help="MD timestep (fs)")
+    p_smd.add_argument("--gen", "--g", dest="gen", default="poscar.gen", help="geometry file")
+    p_smd.add_argument("--i", type=int, default=-1, help="frame index")
+    p_smd.add_argument("--l", type=int, default=0, help="opt: 1=variable cell, 0=fixed cell")
+    p_smd.add_argument("--step", type=int, default=200, help="opt max steps")
+    p_smd.add_argument("--kgrid", default=None, help="k-grid cutoff")
+    p_smd.add_argument("--equil", type=int, default=250, help="equilibration frames skipped (--mde)")
+    p_smd.add_argument("--xvfile", default="siesta.XV", help="XV file (--xv)")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -305,4 +334,11 @@ def main():
     elif args.command == "denevo":
         cmd_func(k=args.k, top=args.top, last=args.last,
                  gen_range=args.gen_range, out=args.out, gp_csv=args.gp_csv)
+    elif args.command == "smd":
+        cmd_func(opt=args.opt, fdf=args.fdf, traj=args.traj, md=args.md,
+                 npt=args.npt, pm=args.pm, mde=args.mde, xv=args.xv, w=args.w,
+                 ncpu=args.ncpu, T=args.T, P=args.P, us=args.us,
+                 tstep=args.tstep, dt=args.dt, gen=args.gen, i=args.i,
+                 l=args.l, step=args.step, kgrid=args.kgrid,
+                 equil=args.equil, xvfile=args.xvfile)
 
