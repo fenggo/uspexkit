@@ -28,7 +28,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from irff.md.gulp import write_gulp_in,get_reax_energy ,opt
 # from irff.dft.dftb import dftb_opt
 from irff.dft.siesta import siesta_opt
-from irff.molecule import Molecules,enlarge, SuperCell # moltoatoms
+from irff.molecule import Molecules,enlarge, SuperCell,repulse,reassemble # moltoatoms
 
 
 ''' A work flow in combination with USPEX 
@@ -351,25 +351,59 @@ def fixbroken(broken=1.5,dat='data',scale=1.2,ncpu=1):
     e_scale= e_mean - np.mean(y_eng)
 
     if e_mean-e[0]>broken:
+       cell  = atoms.get_cell()
+       inv_c = np.linalg.inv(cell)
        if exists("molecule.pkl"):
           with open("molecule.pkl", "rb") as f:
                m_ = pickle.load(f)
           for m in m_:
               for i,na in enumerate(m.mol_index):
                   m.mol_x[i] = atoms.positions[na]
+              m.center = np.sum(m.mol_x,axis=0)/m.natom
 
-          for m in m_:
-              m.center       = np.sum(m.mol_x,axis=0)/m.natom
-        
-          nmol    = len(m_)
-          cell    = atoms.get_cell()
-          irun = 0
-          fac  = 1.0
+          irun   = 0
+          d_safe = 2.0
           while e_mean-e[0]>broken and irun < 4:
-                fac = fac*scale
-                _,atoms = enlarge(m_,cell=cell,fac=fac,supercell=[1,1,1])
-                atoms,e,density = get_gulp_energy(atoms, ncpu=ncpu,o=False)
-                irun += 1
+                # wrap each molecule as a rigid body back into the cell
+                for mol in m_:
+                    fc    = mol.center @ inv_c
+                    shift = np.floor(fc) @ cell
+                    if np.any(shift != 0.0):
+                       mol.move(-shift)
+                       mol.center -= shift
+
+                m_,d_min,niter = repulse(m_, cell=cell, d_safe=d_safe)
+                atoms_new = reassemble(m_, cell=cell, scale=scale)
+                atoms_new,e,density = get_gulp_energy(atoms_new, ncpu=ncpu,o=False)
+                print('fixbroken iter {:d}: d_min={:.3f} A (d_safe={:.2f}), '
+                      'E deviation={:.3f} eV'.format(irun+1,d_min,d_safe,e_mean-e[0]))
+                atoms  = atoms_new
+                irun  += 1
+                d_safe += 0.3
+       else:
+          # no cached fragments – detect from the current structure and cache
+          m_ = Molecules(atoms,rcut={"H-H":1.0,"H-O":1.02,"O-O":1.4,"H-N":1.22,
+                                     "H-C":1.35,"others":1.75},check=True)
+          with open("molecule.pkl","wb") as f:
+               pickle.dump(m_,f)
+
+          irun, d_safe = 0, 2.0
+          while e_mean-e[0]>broken and irun < 4:
+                for mol in m_:
+                    fc    = mol.center @ inv_c
+                    shift = np.floor(fc) @ cell
+                    if np.any(shift != 0.0):
+                       mol.move(-shift)
+                       mol.center -= shift
+
+                m_,d_min,niter = repulse(m_, cell=cell, d_safe=d_safe)
+                atoms_new = reassemble(m_, cell=cell, scale=scale)
+                atoms_new,e,density = get_gulp_energy(atoms_new, ncpu=ncpu,o=False)
+                print('fixbroken iter {:d}: d_min={:.3f} A (d_safe={:.2f}), '
+                      'E deviation={:.3f} eV'.format(irun+1,d_min,d_safe,e_mean-e[0]))
+                atoms  = atoms_new
+                irun  += 1
+                d_safe += 0.3
     else:
        if not exists("molecule.pkl"):
           m_  = Molecules(atoms,rcut={"H-H":1.0,"H-O":1.02,"O-O":1.4,"H-N":1.22,"H-C":1.35,
