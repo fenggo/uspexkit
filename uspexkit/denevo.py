@@ -269,10 +269,15 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                         ha="center", fontweight="bold", zorder=8)
 
         # EI 选中: 绿色圆圈圈住原 GP 预测星
-        for (ei, cid, dgp, sigma, residual), j in zip(ei_topk, eoffs):
-            x = gen + j
-            x_by_id.setdefault((gen, cid), x)
-            ax.scatter(x, dgp, s=360, facecolors="none", edgecolors="#27ae60",
+        # 关键：若该晶体已在 top-5（已有橙星），必须复用那颗星的 x 位置，
+        # 否则独立的 jitter 会让绿圈横向错位、看似套住密度不同的星。
+        for ei_rank, (ei, cid, dgp, sigma, residual) in enumerate(ei_topk):
+            if (gen, cid) in x_by_id:
+                x = x_by_id[(gen, cid)]      # 对齐到该晶体自己的橙星
+            else:
+                x = gen + eoffs[ei_rank]     # 不在 top-5：单独排开
+                x_by_id[(gen, cid)] = x
+            ax.scatter(x, dgp, s=300, facecolors="none", edgecolors="#27ae60",
                        linewidths=1.8, zorder=5,
                        label="EI-selected" if gen == gens[0] else "")
             # 更新高斯值: DFT 完成后该点纳入训练集, 无观测噪声 GP
