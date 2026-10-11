@@ -906,7 +906,11 @@ def update(traj,inde=None,step=1000,tolerance=0.005,ncpu=1):
 # ──────────────────────────────────────────────
 
 def traj(fposcar="gatheredPOSCARS"):
-    """Convert gatheredPOSCARS to ASE trajectory file."""
+    """Convert gatheredPOSCARS to ASE trajectory file.
+
+    安全机制: gatheredPOSCARS 的结构块数可能与 Individuals 的能量条数
+    不一致 (中途崩溃/手动增删结构)。能量缺失时用 0 占位并告警, 不再越界中断。
+    """
     from uspexkit.utils import Stack
 
     with open(fposcar) as fbp:
@@ -933,12 +937,23 @@ def traj(fposcar="gatheredPOSCARS"):
                 energies.append(float(l[3]))
         st.close()
 
+    def get_energy(idx):
+        if idx < len(energies):
+            return energies[idx], False
+        return 0.0, True
+
+    n_missing = 0
     for line in lines:
         if "EA" in line:
             if k > 0:
                 fpos.close()
                 atoms = read("POSCAR")
-                atoms.calc = SinglePointCalculator(atoms, energy=energies[s])
+                energy, missing = get_energy(s)
+                if missing:
+                    n_missing += 1
+                    print(f"警告: gatheredPOSCARS 第 {k} 个结构在 Individuals 中"
+                          f"无对应能量 (仅 {len(energies)} 条), 能量置 0")
+                atoms.calc = SinglePointCalculator(atoms, energy=energy)
                 traj_w.write(atoms=atoms)
                 s += 1
             fpos = open("POSCAR", "w")
@@ -949,9 +964,17 @@ def traj(fposcar="gatheredPOSCARS"):
 
     fpos.close()
     atoms = read("POSCAR")
-    atoms.calc = SinglePointCalculator(atoms, energy=energies[s])
+    energy, missing = get_energy(s)
+    if missing:
+        n_missing += 1
+        print(f"警告: gatheredPOSCARS 第 {k} 个结构在 Individuals 中"
+              f"无对应能量 (仅 {len(energies)} 条), 能量置 0")
+    atoms.calc = SinglePointCalculator(atoms, energy=energy)
     traj_w.write(atoms=atoms)
     traj_w.close()
+
+    print(f"转换完成: {k} 个结构, {len(energies)} 条能量"
+          + (f", 其中 {n_missing} 个能量缺失已置 0" if n_missing else ", 数量一致"))
 
 # ──────────────────────────────────────────────
 #  zmat — 内坐标
