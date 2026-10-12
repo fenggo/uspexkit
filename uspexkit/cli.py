@@ -112,8 +112,7 @@ def main():
                       help="Top-K crystals for EI active learning (default: 1)")
     p_gp.add_argument("--mode", default="ei",
                       help="Selection mode for active learning: ei, random, uncertainty (default: ei)")
-    p_gp.add_argument("--optype", type=int, default=1,
-                      help="USPEX optType passed from submitJob")
+    p_gp.add_argument("--optype", type=int, default=11,help="optype 1: energy 11: density")
     p_gp.add_argument("--id", type=int, default=None,
                       help="crystal global ID (bodyCount+1) passed by USPEX submitJob")
 
