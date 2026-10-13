@@ -588,7 +588,10 @@ def pred(t="Individuals.traj", g=None, gen=None, f=1, den=1.88, ids=None,x=-1,
     for s in ids_list:
         dir_list = root_dir.split("/")
         rootdir = "/".join(dir_list[:-1])
-        data_dir = f"{rootdir}/{dat}"
+        if exists(f"{root_dir}/{dat}"):
+           data_dir = f"{root_dir}/{dat}"
+        else:
+           data_dir = f"{rootdir}/{dat}"
         # print(images,s)
         atoms = images[s - 1]
 
