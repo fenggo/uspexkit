@@ -65,7 +65,8 @@ def parse_individuals(path):
 
 
 def parse_density_predict(path):
-    """→ {id: (residual, dgp, std, dmlp, drf, energy)}  (同 id 取最后)"""
+    """→ {id: (residual, dgp, std, dmlp, drf, energy, upd_mu, upd_sigma)}
+    后两列旧数据源为 nan (同 id 取最后)"""
     data = {}
     if not os.path.exists(path):
         return data
@@ -84,7 +85,8 @@ def parse_density_predict(path):
                 eng = float(p[6]) if len(p) >= 7 else float("nan")
             except ValueError:
                 continue
-            data[cid] = (residual, dgp, std, dmlp, drf, eng)
+            data[cid] = (residual, dgp, std, dmlp, drf, eng,
+                         float("nan"), float("nan"))
     return data
 
 
@@ -114,7 +116,16 @@ def parse_gp_csv(path):
             except ValueError:
                 continue
             std = uncert / UNCERT_SCALE
-            data[cid] = (residual, dgp, std, dmlp, drf, eng)
+            # cols 10/11: 更新后后验均值与 ±1.96σ (仅 DFT 完成的行有值)
+            upd_mu = float("nan"); upd_sigma = float("nan")
+            if len(p) >= 12 and p[10] and p[11]:
+                try:
+                    upd_mu = float(p[10])
+                    upd_sigma = float(p[11])
+                except ValueError:
+                    pass
+            data[cid] = (residual, dgp, std, dmlp, drf, eng,
+                         upd_mu, upd_sigma)
     return data
 
 
@@ -169,7 +180,8 @@ def build_per_gen(gen_ids, pred, dft, k=2, top=5):
         f_best = max((r[2] for r in valid), default=float("-inf"))  # r[2]=density_gp
 
         ei_list = []
-        for cid, residual, dgp, std, dmlp, drf, eng in valid:
+        for row in valid:
+            cid, residual, dgp, std = row[0], row[1], row[2], row[3]
             sigma = UNCERT_SCALE * std
             ei = expected_improvement(dgp, sigma, f_best)
             ei_list.append((ei, cid, dgp, sigma, residual))
@@ -283,10 +295,20 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
             # 更新高斯值: DFT 完成后该点纳入训练集, 无观测噪声 GP
             # 在训练点处后验均值 = 观测值 (DFT 密度)
             if cid in dft:
-                d_upd = dft[cid][0]
+                # 更新高斯: 优先用 gp.csv 记录的后验均值/±1.96σ;
+                # 旧数据缺列时回退为 DFT 值、σ=0(无误差棒)
+                upd_mu = pred[cid][6]; upd_sigma = pred[cid][7]
+                if np.isfinite(upd_mu) and np.isfinite(upd_sigma):
+                    d_upd = upd_mu; err_upd = max(upd_sigma, 0.0)
+                else:
+                    d_upd = dft[cid][0]; err_upd = 0.0
+                if err_upd > 0.0:
+                    ax.errorbar(x, d_upd, yerr=err_upd, fmt="none",
+                                ecolor="#16a085", elinewidth=1.0, alpha=0.6,
+                                capsize=0, zorder=6)
                 ax.scatter(x, d_upd, s=95, marker="^", color="#16a085",
                            edgecolors="#0e6655", linewidths=0.7, zorder=7,
-                           label="updated GP (after DFT included)"
+                           label="updated GP (after DFT included, ±1.96σ)"
                            if gen == gens[0] else "")
                 ax.plot([x, x], [dgp, d_upd], color="#aab7b8", lw=0.8,
                         alpha=0.6, zorder=4)

@@ -174,7 +174,8 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
     if not exists('gp.csv'):
         with open('gp.csv','w') as fd:
              print(',   index,          residual,        density_min,         density_rf,   density_gp,'
-                '          uncertainty,           energy_min,       eng_pred,        uncertainty_eng',file=fd)
+                '          uncertainty,           energy_min,       eng_pred,        uncertainty_eng,'
+                '      density_gp_updated,  uncertainty_updated',file=fd)
 
     # X_ = np.concatenate((X,np.expand_dims(feature,axis=0)))  #X_train.extend(feature)
     X_ = scaler.transform(np.expand_dims(feature,axis=0))
@@ -205,6 +206,12 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
         except (subprocess.CalledProcessError, FileNotFoundError, IndexError, ValueError):
             id_ = 1
            
+    # DFT 分支运行标记：该晶体已 DFT 并加入训练集, gp.csv 只能写一行
+    dft_done = False
+    # 更新后的后验 (该点作为训练点): (mean_updated, 1.96*std_updated)
+    density_updated = float('nan')
+    uncert_updated = float('nan')
+
     if dft:
        data_pred = np.loadtxt('gp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
        if data_pred.size > 0:
@@ -257,13 +264,46 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
                             traj_w.write(atoms=atoms)
                        with TrajectoryWriter(f"../{dat}/structures.traj", mode="a") as traj_w:
                             traj_w.write(atoms=atoms_opt)
-                          
-    with open('gp.csv','a') as fd:
-        # id_ = fd.tell()
-        print(id_,',',imin,',',res[imin],',',data_[imin][-1],',',
-            density_rf[0],',',mean_prediction[0],',',
-            1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
-            file=fd)
+
+                       # ---- 更新后的后验 ----
+                       # 新 DFT 点已追加进训练集。用当前 GP 的超参冻结
+                       # (optimizer=None, 不重新优化 LML) 拟合一次, 对该点
+                       # 自身预测 -> 更新高斯均值 + 不确定度。带 WhiteKernel
+                       # 观测噪声时训练点处后验 σ 不为零, 正是三角上误差棒
+                       # 的长度。失败则保留 nan (绘图端回退为 σ=0)。
+                       try:
+                           X_upd = np.vstack([X, X_[0]])
+                           y_upd = np.concatenate([y, np.array([density_])])
+                           gpr_upd = GaussianProcessRegressor(
+                               kernel=gpr_density.kernel_,
+                               alpha=gpr_density.alpha,
+                               optimizer=None,
+                               normalize_y=True)
+                           gpr_upd.fit(X_upd, y_upd)
+                           mu_upd, sd_upd = gpr_upd.predict(X_, return_std=True)
+                           density_updated = float(mu_upd[0])
+                           uncert_updated = float(1.96 * sd_upd[0])
+                       except Exception as _err:
+                           print(f'[gp] updated posterior failed for id {id_}: {_err}')
+
+                       dft_done = True
+
+    if not dft_done:
+       with open('gp.csv','a') as fd:
+           # id_ = fd.tell()
+           print(id_,',',imin,',',res[imin],',',data_[imin][-1],',',
+               density_rf[0],',',mean_prediction[0],',',
+               1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
+               ',', '',',','',
+               file=fd)
+    else:
+       # DFT 已完成: 只写一行, 末尾两列为更新后后验均值与 ±1.96σ
+       with open('gp.csv','a') as fd:
+           print(id_,',',imin,',',res[imin],',',data_[imin][-1],',',
+               density_rf[0],',',mean_prediction[0],',',
+               1.96*std_prediction[0],',',data_[imin][1],',',mean_eng_pred[0],',',1.96*std_eng_pred[0],
+               ',', f'{density_updated:.8f}',',',f'{uncert_updated:.8f}',
+               file=fd)
     if optype==11:
        energy  = -density_ # mean_eng_pred[0]
     else:
