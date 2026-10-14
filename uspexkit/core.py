@@ -1016,8 +1016,8 @@ def traj(fposcar="gatheredPOSCARS"):
     traj_w.write(atoms=atoms)
     traj_w.close()
 
-    print(f"转换完成: {k} 个结构, {len(energies)} 条能量"
-          + (f", 其中 {n_missing} 个能量缺失已置 0" if n_missing else ", 数量一致"))
+    # print(f"转换完成: {k} 个结构, {len(energies)} 条能量"
+    #       + (f", 其中 {n_missing} 个能量缺失已置 0" if n_missing else ", 数量一致"))
 
 # ──────────────────────────────────────────────
 #  zmat — 内坐标
