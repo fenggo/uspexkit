@@ -263,7 +263,6 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
         top_n = per_gen[gen]["top_n"]
         ei_topk = per_gen[gen]["ei_topk"]
         offs = jitter(len(top_n), span=0.30)
-        eoffs = jitter(len(ei_topk), span=0.16)
 
         # top-5 高密度: 橙色星 + ±1.96σ 误差棒
         for (cid, dgp, std), j in zip(top_n, offs):
@@ -283,12 +282,30 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
         # EI 选中: 绿色圆圈圈住原 GP 预测星
         # 关键：若该晶体已在 top-5（已有橙星），必须复用那颗星的 x 位置，
         # 否则独立的 jitter 会让绿圈横向错位、看似套住密度不同的星。
+        # EI 不在 top-5 的晶体整组移到代右侧空白区, 与 top-5 水平完全分开。
+        # top-5 占 x=gen±0.30, 非 top-5 的 extra DFT 在 gen+0.46 起,
+        # EI 整组用 gen+0.40 起、每个间距 0.14, 夹在 top-5 与 extra 之间,
+        # 与两者都不重叠。同一晶体的星/圈/三角/菱形/连线都在这条竖线。
+        # (此前 EI jitter 在 top-5 间隙内, 与相邻 top-5 星/误差棒像素级
+        #  交叠, 且同竖线 GP星与三角/菱形被挤进相邻点区, 圈星错位)
+        ei_extra_n = [0]   # 每代已排开的 EI 非 top-5 晶体计数
         for ei_rank, (ei, cid, dgp, sigma, residual) in enumerate(ei_topk):
             if (gen, cid) in x_by_id:
                 x = x_by_id[(gen, cid)]      # 对齐到该晶体自己的橙星
             else:
-                x = gen + eoffs[ei_rank]     # 不在 top-5：单独排开
+                x = gen + 0.40 + ei_extra_n[0] * 0.14
+                ei_extra_n[0] += 1
                 x_by_id[(gen, cid)] = x
+                # 不在 top-5 的 EI 晶体没有橙星——补画其 GP 星+误差棒,
+                # 否则圆圈悬空、圈不住任何星 (如 gen4 #356)
+                ax.errorbar(x, dgp, yerr=sigma, fmt="none", ecolor="#e67e22",
+                            elinewidth=1.0, alpha=0.55, capsize=0, zorder=3)
+                ax.scatter(x, dgp, s=72, marker="*", color="#e67e22",
+                           edgecolors="#7e5109", linewidths=0.6, zorder=4)
+                dy = 11 if gi % 2 == 0 else -15
+                ax.annotate(f"#{cid}", (x, dgp), textcoords="offset points",
+                            xytext=(0, dy), fontsize=6.5, color="#8a6d1a",
+                            ha="center", fontweight="bold", zorder=8)
             ax.scatter(x, dgp, s=300, facecolors="none", edgecolors="#27ae60",
                        linewidths=1.8, zorder=5,
                        label="EI-selected" if gen == gens[0] else "")
@@ -310,8 +327,16 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                            edgecolors="#0e6655", linewidths=0.7, zorder=7,
                            label="updated GP (after DFT included, ±1.96σ)"
                            if gen == gens[0] else "")
-                ax.plot([x, x], [dgp, d_upd], color="#aab7b8", lw=0.8,
-                        alpha=0.6, zorder=4)
+                # 更新值三角自己的 #id 标签(青色), annotate 放标记上方+20pt,
+                # 与 DFT 菱形红色 #id(下方-20pt)上下分开, 不互相遮挡
+                ax.annotate(f"#{cid}", (x, d_upd), textcoords="offset points",
+                            xytext=(0, 20), fontsize=6.5, color="#0e6655",
+                            ha="center", va="bottom", fontweight="bold",
+                            zorder=10, annotation_clip=False)
+                # GP 星 -> 更新值 竖直连线加粗, 明确两者属于同一晶体,
+                # 避免三角/菱形被误读成相邻 top-5 点的标记
+                ax.plot([x, x], [dgp, d_upd], color="#16a085", lw=1.4,
+                        alpha=0.75, zorder=4)
 
     # ============ DFT: 与同一晶体的 GP 预测值纵向对齐 + 连线 ============
     for gen in gens:
@@ -321,9 +346,10 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
         # EI 且已 DFT 的晶体: 更新值已用三角画过, 这里不再画红菱形
         ei_dft_ids = {t[1] for t in per_gen[gen]["ei_topk"] if t[1] in dft_g}
         # 不在 top-5/EI 中的 DFT 晶体: 在代右侧等距排开, 补画其 GP 小星
+        # EI 非 top-5 已占 gen+0.40 起(间距0.14), extra DFT 从 gen+0.62 起避开
         extra_ids = [cid for cid in dft_g if (gen, cid) not in x_by_id]
         for i, cid in enumerate(extra_ids):
-            x_by_id[(gen, cid)] = gen + 0.46 + i * 0.14
+            x_by_id[(gen, cid)] = gen + 0.62 + i * 0.14
 
         for cid, (dd, de) in dft_g.items():
             if cid not in pred:
@@ -335,7 +361,22 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                            edgecolors="#7e5109", linewidths=0.5,
                            zorder=4, alpha=0.85)
             if cid in ei_dft_ids:
-                # 更新值三角 + 圆圈已画, 跳过红菱形 (对比线也由 EI 段画过)
+                # EI+DFT: 更新GP三角已在 EI 段画过。三角是后验均值、
+                # 与 DFT 实际值不再相等(旧语义"同值重叠"不成立),
+                # 这里补画红菱形=DFT 实际值 + 虚线对比
+                ax.plot([x, x], [dgp, dd], color="#7f8c8d", lw=0.9,
+                        linestyle="--", alpha=0.7, zorder=4)
+                # zorder 高于三角(7)。三角与菱形同一 y 必然重叠: 菱形画成
+                # 空心描边在外圈, 让实心三角在中间透出, 两者都可见。
+                # (此前实心菱形盖住三角/实心三角盖住菱形, 总有一个看不见)
+                ax.scatter(x, dd, s=200, marker="D", facecolors="none",
+                           edgecolors="#c0392b", linewidths=1.6, zorder=9)
+                # DFT 菱形红色 #id 放标记下方-20pt, 与三角青色 #id(上方+20)
+                # 上下分开足够远, 不会被菱形图形或连线遮挡
+                ax.annotate(f"#{cid}", (x, dd), textcoords="offset points",
+                            xytext=(0, -20), fontsize=7, color="#922b21",
+                            ha="center", va="top", fontweight="bold",
+                            zorder=10, annotation_clip=False)
                 continue
             # GP 预测 → DFT 实际 对比竖线
             ax.plot([x, x], [dgp, dd], color="#7f8c8d", lw=0.9,
@@ -360,8 +401,8 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
     ax.legend(by_lab.values(), by_lab.keys(), loc="lower right",
               fontsize=9, framealpha=0.95, ncol=1)
     ax.set_xticks(gens)
-    # 右侧可能排有非 top-5 的 DFT 点 (gen+0.46 起, 每个间距 0.14)
-    ax.set_xlim(min(gens) - 0.5, max(gens) + 1.1)
+    # 右侧: top-5(±0.30) + EI非top5(0.40起) + extra DFT(0.62起, 间距0.14)
+    ax.set_xlim(min(gens) - 0.5, max(gens) + 1.2)
 
     fig.tight_layout()
     fig.savefig(out_png, dpi=150, bbox_inches="tight")
