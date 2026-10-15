@@ -93,6 +93,7 @@ def main():
     p_calcdata.add_argument("--t", default='structures.traj', help="Trajectory file")
     p_calcdata.add_argument("--step",type=int,  default=1000, help="number of step to used to optimize by MLP")
     p_calcdata.add_argument("--c",type=str, default='nn', help="the calculator to be used, aviliable: nn, mtp")
+    p_calcdata.add_argument("--f", type=int, default=1, help="feature 模式 (1=原始; 2=能量按分子数平均, 密度除外)")
 
    # ── gp ──  
     p_gp = sub.add_parser("gp", help=COMMANDS["gp"][1])
@@ -130,6 +131,7 @@ def main():
     p_add.add_argument("--i", type=int, default=-1, help="the index of the Atoms object in trajectory")
     p_add.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_add.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
+    p_add.add_argument("--f", type=int, default=1, help="feature 模式 (1=原始; 2=能量按分子数平均, 密度除外)")
  # ── update ── 
     p_update = sub.add_parser("update", help=COMMANDS["update"][1])
     p_update.add_argument("--n", type=int, default=1, help="number cpu tobe used")
@@ -143,6 +145,7 @@ def main():
     p_addall.add_argument("--s", type=int, default=1000, help="the step of mlp geometry optimization")
     p_addall.add_argument("--tolerance",  type=float,default=0.005, help="match tolerance")
     p_addall.add_argument("--t", type=str,default='structures.traj', help="trajector file name")
+    p_addall.add_argument("--f", type=int, default=1, help="feature 模式 (1=原始; 2=能量按分子数平均, 密度除外)")
  # ── supercell ── 
     p_supercell = sub.add_parser("supercell", help=COMMANDS["supercell"][1])
     p_supercell.add_argument("--x", type=int, default=1, help="X")
@@ -287,7 +290,7 @@ def main():
     elif args.command == "sample":
         cmd_func(ind=args.ind, t=args.t)
     elif args.command == "calcdata":
-        cmd_func(traj=args.t, step=args.step,n=args.n,c=args.c)
+        cmd_func(traj=args.t, step=args.step,n=args.n,c=args.c,f=args.f)
     elif args.command == "gp":
         cmd_func(tolerance=args.t,step=args.step,n=args.n,b=args.b,u=args.u,f=args.f,
                  dft=args.dft,pop=args.pop,
@@ -295,9 +298,9 @@ def main():
     elif args.command == "fixbroken":
         cmd_func(broken=args.b,dat=args.data,scale=args.s,ncpu=args.n)
     elif args.command == "add":
-        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,i=args.i,ncpu=args.n)
+        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,i=args.i,ncpu=args.n,f=args.f)
     elif args.command == "addall":
-        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n)
+        cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n,f=args.f)
     elif args.command == "supercell":
         cmd_func(traj=args.t,gen=args.g,x=args.x,y=args.y,z=args.z)
     elif args.command == "update":

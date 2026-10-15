@@ -54,13 +54,13 @@ def supercell(gen=None,traj=None,x=1,y=1,z=1):
         his.close()
 
 
-def addall(traj='structures.traj',step=1000,tolerance=0.005,ncpu=1):
+def addall(traj='structures.traj',step=1000,tolerance=0.005,ncpu=1,f=1):
     images = Trajectory(traj)
     for atoms_dft in images:
-        add(atoms_dft,step=step,tolerance=tolerance,ncpu=ncpu)
+        add(atoms_dft,step=step,tolerance=tolerance,ncpu=ncpu,f=f)
 
 
-def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncpu=1):
+def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncpu=1,f=1):
     if atoms_dft is None:
        atoms_dft = read(traj,i)
     masses  = np.sum(atoms_dft.get_masses())
@@ -82,7 +82,9 @@ def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncp
     d    = data[:,1:]         # 去掉索引
     i    = int(data[-1][0])+1   # 获取索引
     # print(cry)
-    feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density_])
+    sc    = get_nmol(atoms) if f==2 else 1.0
+    feature = np.array([e[0]/sc,e[1]/sc,e[5]/sc,e[8]/sc,e[10]/sc,
+                        e_cho[11]/sc,e_chn[11]/sc,e_chc[11]/sc,e[12]/sc,density_])
     res  = np.sum(np.square(d - feature),axis=1)
     ind  = np.where(res<tolerance)
     
@@ -96,7 +98,7 @@ def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncp
                      feature[8],',',feature[9],
                      file=fd) 
        with open('feature.csv','a') as fd:
-            print(i,',',energy,',',feature[1],',',feature[2],',',feature[3],',',feature[4],',',
+            print(i,',',energy/sc,',',feature[1],',',feature[2],',',feature[3],',',feature[4],',',
                   feature[5],',',feature[6],',',feature[7],',',
                   feature[8],',',density,file=fd)  
     
@@ -123,6 +125,14 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
     return e
 
 
+def get_nmol(atoms):
+    '''返回晶胞内分子数，检测方式与 fixbroken 一致 (相同 rcut)。'''
+    m_ = Molecules(atoms, rcut={"H-H": 1.0, "H-O": 1.02, "O-O": 1.4,
+                                "H-N": 1.22, "H-C": 1.35, "others": 1.75},
+                   check=True)
+    return len(m_)
+
+
 def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,pop=100,ref='results1',id_=None,k=1,mode='ei',optype=11):
     ''' Gaussian Process '''
     write_input(inp='inp-grad',keyword='grad conv qiterative verb')
@@ -142,8 +152,11 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
     e_chc = get_hbond_feature(atoms,n=n,elements='H core C core C core')
 
     if f==1:
-       # feature = np.array([e[0],e[1],e[5],e[8],e[10],e[11],e[12],density])
        feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
+    elif f==2:
+       nmol = get_nmol(atoms)
+       feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density], dtype=float)
+       feature[:-1] /= nmol      # 能量项按分子数平均, 密度(末位)不变
     else:
        feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
  
@@ -151,6 +164,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
     data_  = np.loadtxt('../{:s}/feature.csv'.format(dat),delimiter=',',skiprows=1)      ## get crystal feature data
     images = Trajectory('../{:s}/structures.traj'.format(dat))
     d      = data[:,1:]    # 去掉索引
+    # f==2 只对查询 feature 做 nmol 平均, 训练数据 d 保持原始总能量不动
 
     # Train a Gaussian Process 
     res    = np.sum(np.square(d - feature),axis=1)
@@ -158,7 +172,7 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
     imin   = np.argmin(res)
 
     ### prepare data 
-    X_raw  = data[:,1:]
+    X_raw  = d
     y      = data_[:,-1]
     y_eng  = data_[:,1]
 
@@ -312,8 +326,9 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
     write_geometry(atoms=atoms)
     
 
-def calcdata(traj='structures.traj',n=8,c='nn',step=1000):
-    ''' c: calculator, which mathine learning potential to be used '''
+def calcdata(traj='structures.traj',n=8,c='nn',step=1000,f=1):
+    ''' c: calculator, which mathine learning potential to be used
+        f: feature 模式 (1=原始总能量; 2=能量项按分子数平均, 密度除外) '''
     images      = Trajectory(traj)
     traj_       = TrajectoryWriter('structures_mlp.traj',mode='w')
 
@@ -338,6 +353,8 @@ def calcdata(traj='structures.traj',n=8,c='nn',step=1000):
         e_chn = get_hbond_feature(atoms,n=n,elements='H core C core N core')
         e_chc = get_hbond_feature(atoms,n=n,elements='H core C core C core')
 
+        sc = get_nmol(atoms) if f==2 else 1.0
+
         # atoms = read('gulp.cif')
         atoms.calc = SinglePointCalculator(atoms,energy=e[0])
         traj_.write(atoms=atoms)
@@ -352,11 +369,11 @@ def calcdata(traj='structures.traj',n=8,c='nn',step=1000):
                                         e[11],e_cho[11],e_chn[11],e_chc[11],
                                         e[12],density))
         with open('feature_mlp.csv','a') as fd:
-            print(i,',',e[0],',',e[1],',',e[5],',',e[8],',',e[10],',',e_cho[11],',',e_chn[11],',',e_chc[11],',',
-                e[12],',',density,file=fd) 
+            print(i,',',e[0]/sc,',',e[1]/sc,',',e[5]/sc,',',e[8]/sc,',',e[10]/sc,',',e_cho[11]/sc,',',e_chn[11]/sc,',',e_chc[11]/sc,',',
+                e[12]/sc,',',density,file=fd) 
         with open('feature.csv','a') as fd_:
-            print(i,',',energy,',',e[1],',',e[5],',',e[8],',',e[10],',',e_cho[11],',',e_chn[11],',',e_chc[11],',',
-                e[12],',',density_,file=fd_) 
+            print(i,',',energy/sc,',',e[1]/sc,',',e[5]/sc,',',e[8]/sc,',',e[10]/sc,',',e_cho[11]/sc,',',e_chn[11]/sc,',',e_chc[11]/sc,',',
+                e[12]/sc,',',density_,file=fd_) 
             
     traj_.close()
 
@@ -613,20 +630,26 @@ def pred(t="Individuals.traj", g=None, gen=None, f=1, den=1.88, ids=None,x=-1,
         e_chc   = get_hbond_feature(atoms_mlp,n=ncpu,elements='H core C core C core')
         
         # if f == 1:
-        feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
-        # else:
-        #    feature = np.array([e[0],e[1],e[5], e[8], e[10], e[11], e[12], density])
+        if f==1:
+            feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density])
+        elif f==2:
+            nmol = get_nmol(atoms)
+            feature = np.array([e[0],e[1],e[5],e[8],e[10],e_cho[11],e_chn[11],e_chc[11],e[12],density], dtype=float)
+            feature[:-1] /= nmol      # 能量项按分子数平均, 密度不变
+        else:
+            feature = np.array([e[0],e[5],e[8],e[10],e[11],e[12],density])
 
         assert exists("structures.traj"), "Error, datafile not found in data directory!"
         data  = np.loadtxt("feature_mlp.csv", delimiter=",", skiprows=1)
         data_ = np.loadtxt("feature.csv", delimiter=",", skiprows=1)
         struc = Trajectory('structures.traj')
 
-        D = data[:, 1:]
+        X_raw = data[:, 1:]
+        # f==2 只对查询 feature 做 nmol 平均, 训练数据 X_raw 保持原始总能量不动
+        D = X_raw
         D_ = data_[:, 1:]
         ind, imin, res_ = search_structure(feature, D, tolerance=tolerance)
 
-        X_raw = data[:, 1:]
         y = data_[:, -1]
         y_eng = data_[:, 1]
         scaler = preprocessing.StandardScaler().fit(X_raw)
