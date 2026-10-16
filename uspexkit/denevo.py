@@ -280,7 +280,7 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                         elinewidth=1.0, alpha=0.55, capsize=0, zorder=3)
             ax.scatter(x, dgp, s=72, marker="*", color="#e67e22",
                        edgecolors="#7e5109", linewidths=0.6, zorder=4,
-                       label=L("top5", "GP top-5 (pred ±1.96σ)"))
+                       label=L("top5", "GP top-5 (pred ± 95% confidence space)"))
             dy = 11 if gi % 2 == 0 else -15
             ax.annotate(f"#{cid}", (x, dgp), textcoords="offset points",
                         xytext=(0, dy), fontsize=6.5, color="#8a6d1a",
@@ -377,7 +377,7 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                 # (此前实心菱形盖住三角/实心三角盖住菱形, 总有一个看不见)
                 ax.scatter(x, dd, s=200, marker="D", facecolors="none",
                            edgecolors="#c0392b", linewidths=1.6, zorder=9,
-                           label=L("dft", "DFT density"))
+                           label=L("dft", "DFT verification"))
                 # DFT 菱形红色 #id 放标记下方-20pt, 与三角青色 #id(上方+20)
                 # 上下分开足够远, 不会被菱形图形或连线遮挡
                 ax.annotate(f"#{cid}", (x, dd), textcoords="offset points",
@@ -390,15 +390,15 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                     linestyle="--", alpha=0.7, zorder=4)
             ax.scatter(x, dd, s=130, marker="D", color="#c0392b",
                        edgecolors="#641e16", linewidths=1.0, zorder=6,
-                       label=L("dft", "DFT density"))
+                       label=L("dft", "DFT verification"))
             ax.annotate(f"#{cid}", (x, dd), textcoords="offset points",
                         xytext=(0, 9), fontsize=7, color="#922b21",
                         ha="center", fontweight="bold", zorder=8)
 
     ax.set_xlabel("Generation")
     ax.set_ylabel(r"Density (g/cm$^3$)")
-    ax.set_title("GP top-5 high-density + EI-selected (updated) + DFT",
-                 fontsize=13, fontweight="bold")
+    #ax.set_title("GP top-5 high-density + EI-selected (updated) + DFT",
+    #             fontsize=13, fontweight="bold")
     ax.grid(True, alpha=0.25, linestyle="--")
     handles, labels = ax.get_legend_handles_labels()
     by_lab = {}
