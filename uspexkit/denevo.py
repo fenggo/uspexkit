@@ -29,6 +29,37 @@ import matplotlib.pyplot as plt
 UNCERT_SCALE = 1.96          # gp.csv uncertainty = 1.96 * pred std_den
 RESIDUAL_CUT = 10.0          # CalcFitness_310.m 的 residual>10 过滤
 
+# JACS-style muted color palette
+C_BEST      = "#1F4E79"     # 深藏青: 每代最佳密度曲线
+C_GP        = "#C56C39"     # 赭棕: GP 预测 top-5
+C_GP_EDGE   = "#7B4420"
+C_GP_LABEL  = "#8B571F"
+C_EI        = "#2F6D5A"     # 墨绿: EI 选中圈
+C_UPD       = "#2A788E"     # 蓝绿: 更新后 GP
+C_UPD_EDGE  = "#1E5869"
+C_DFT       = "#C84545"     # 砖红: DFT 实验值
+C_DFT_EDGE  = "#7E2023"
+C_DFT_LABEL = "#8F2D2D"
+C_LINK      = "#7A7A7A"     # 中性灰: GP-DFT 对比连线
+
+# JACS-style figure typography
+plt.rcParams.update({
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+    "font.size": 10,
+    "axes.labelsize": 11,
+    "axes.titlesize": 12,
+    "axes.linewidth": 0.8,
+    "xtick.labelsize": 9,
+    "ytick.labelsize": 9,
+    "xtick.major.width": 0.8,
+    "ytick.major.width": 0.8,
+    "xtick.direction": "out",
+    "ytick.direction": "out",
+    "legend.fontsize": 8,
+    "legend.frameon": False,
+})
+
 
 # -----------------------------------------------------------------------------
 #  解析
@@ -226,29 +257,31 @@ def plot_evolution(all_rows, dft_by_gen, out_png):
         g, d = r[0], r[4]
         if g not in best_by_gen or d > best_by_gen[g]:
             best_by_gen[g] = d
-    ax.plot(gens, [best_by_gen[g] for g in gens], "o-", color="#2980b9",
-            lw=2.0, ms=6, zorder=3, label="best (max density) per generation")
+    ax.plot(gens, [best_by_gen[g] for g in gens], "o-", color=C_BEST,
+            lw=1.6, ms=5, zorder=3, label="best (max density) per generation")
 
     # DFT 验证点叠加
     if dft_by_gen:
         dft_g = sorted(dft_by_gen)
         dft_x = [g for g in dft_g for _ in dft_by_gen[g]]
         dft_y = [dft_by_gen[g][cid][0] for g in dft_g for cid in dft_by_gen[g]]
-        ax.scatter(dft_x, dft_y, s=120, marker="D", color="#c0392b",
-                   edgecolors="#641e16", linewidths=1.0, zorder=6,
+        ax.scatter(dft_x, dft_y, s=55, marker="D", color=C_DFT,
+                   edgecolors=C_DFT_EDGE, linewidths=0.8, zorder=6,
                    label="DFT density")
 
     ax.set_xlabel("Generation")
     ax.set_ylabel(r"Density (g/cm$^3$)")
     ax.set_title(r"USPEX density evolution  |  TNT$_4$·CL20$_4$ (228 atoms)",
-                 fontsize=13, fontweight="bold")
-    ax.legend(loc="lower right", fontsize=9, framealpha=0.9)
-    ax.grid(True, alpha=0.3, linestyle="--")
+                 fontsize=12, fontweight="normal", pad=10)
+    ax.legend(loc="lower right", frameon=False,
+              handlelength=1.4, handletextpad=0.5,
+              labelspacing=0.5, borderaxespad=0.3)
+    ax.grid(True, alpha=0.30, linestyle="--", linewidth=0.5)
     ax.set_xticks(gens)
     ax.set_xlim(min(gens) - 0.5, max(gens) + 0.5)
 
     fig.tight_layout()
-    fig.savefig(out_png, dpi=150, bbox_inches="tight")
+    fig.savefig(out_png, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved {out_png}")
 
@@ -271,24 +304,24 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
         ei_topk = per_gen[gen]["ei_topk"]
         offs = jitter(len(top_n), span=0.30)
 
-        # top-5 高密度: 橙色星 + ±1.96σ 误差棒
+        # top-5 高密度: GP 预测星 + ±1.96σ 误差棒
         for (cid, dgp, std), j in zip(top_n, offs):
             x = gen + j
             x_by_id[(gen, cid)] = x
             sigma = UNCERT_SCALE * std
-            ax.errorbar(x, dgp, yerr=sigma, fmt="none", ecolor="#e67e22",
-                        elinewidth=1.0, alpha=0.55, capsize=0, zorder=3)
-            ax.scatter(x, dgp, s=72, marker="*", color="#e67e22",
-                       edgecolors="#7e5109", linewidths=0.6, zorder=4,
+            ax.errorbar(x, dgp, yerr=sigma, fmt="none", ecolor=C_GP,
+                        elinewidth=0.9, alpha=0.65, capsize=0, zorder=3)
+            ax.scatter(x, dgp, s=64, marker="*", color=C_GP,
+                       edgecolors=C_GP_EDGE, linewidths=0.7, zorder=4,
                        label=L("top5", "GP top-5 (pred ± 95% confidence space)"))
             dy = 11 if gi % 2 == 0 else -15
             ax.annotate(f"#{cid}", (x, dgp), textcoords="offset points",
-                        xytext=(0, dy), fontsize=6.5, color="#8a6d1a",
-                        ha="center", fontweight="bold", zorder=8)
+                        xytext=(0, dy), fontsize=6.5, color=C_GP_LABEL,
+                        ha="center", fontweight="normal", zorder=8)
 
-        # EI 选中: 绿色圆圈圈住原 GP 预测星
-        # 关键：若该晶体已在 top-5（已有橙星），必须复用那颗星的 x 位置，
-        # 否则独立的 jitter 会让绿圈横向错位、看似套住密度不同的星。
+        # EI 选中: 墨绿色圆圈圈住原 GP 预测星
+        # 关键：若该晶体已在 top-5（已有 GP 星），必须复用那颗星的 x 位置，
+        # 否则独立的 jitter 会让 EI 圈横向错位、看似套住密度不同的星。
         # EI 不在 top-5 的晶体整组移到代右侧空白区, 与 top-5 水平完全分开。
         # top-5 占 x=gen±0.30, 非 top-5 的 extra DFT 在 gen+0.46 起,
         # EI 整组用 gen+0.40 起、每个间距 0.14, 夹在 top-5 与 extra 之间,
@@ -298,23 +331,23 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
         ei_extra_n = [0]   # 每代已排开的 EI 非 top-5 晶体计数
         for ei_rank, (ei, cid, dgp, sigma, residual) in enumerate(ei_topk):
             if (gen, cid) in x_by_id:
-                x = x_by_id[(gen, cid)]      # 对齐到该晶体自己的橙星
+                x = x_by_id[(gen, cid)]      # 对齐到该晶体自己的 GP 星
             else:
                 x = gen + 0.40 + ei_extra_n[0] * 0.14
                 ei_extra_n[0] += 1
                 x_by_id[(gen, cid)] = x
-                # 不在 top-5 的 EI 晶体没有橙星——补画其 GP 星+误差棒,
+                # 不在 top-5 的 EI 晶体没有 GP 星——补画其 GP 星+误差棒,
                 # 否则圆圈悬空、圈不住任何星 (如 gen4 #356)
-                ax.errorbar(x, dgp, yerr=sigma, fmt="none", ecolor="#e67e22",
-                            elinewidth=1.0, alpha=0.55, capsize=0, zorder=3)
-                ax.scatter(x, dgp, s=72, marker="*", color="#e67e22",
-                           edgecolors="#7e5109", linewidths=0.6, zorder=4)
+                ax.errorbar(x, dgp, yerr=sigma, fmt="none", ecolor=C_GP,
+                            elinewidth=0.9, alpha=0.65, capsize=0, zorder=3)
+                ax.scatter(x, dgp, s=64, marker="*", color=C_GP,
+                           edgecolors=C_GP_EDGE, linewidths=0.7, zorder=4)
                 dy = 11 if gi % 2 == 0 else -15
                 ax.annotate(f"#{cid}", (x, dgp), textcoords="offset points",
-                            xytext=(0, dy), fontsize=6.5, color="#8a6d1a",
-                            ha="center", fontweight="bold", zorder=8)
-            ax.scatter(x, dgp, s=300, facecolors="none", edgecolors="#27ae60",
-                       linewidths=1.8, zorder=5,
+                            xytext=(0, dy), fontsize=6.5, color=C_GP_LABEL,
+                            ha="center", fontweight="normal", zorder=8)
+            ax.scatter(x, dgp, s=250, facecolors="none", edgecolors=C_EI,
+                       linewidths=1.4, zorder=5,
                        label=L("ei", "EI-selected"))
             # 更新高斯值: DFT 完成后该点纳入训练集, 无观测噪声 GP
             # 在训练点处后验均值 = 观测值 (DFT 密度)
@@ -328,28 +361,28 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                     d_upd = dft[cid][0]; err_upd = 0.0
                 if err_upd > 0.0:
                     ax.errorbar(x, d_upd, yerr=err_upd, fmt="none",
-                                ecolor="#16a085", elinewidth=1.0, alpha=0.6,
+                                ecolor=C_UPD, elinewidth=0.9, alpha=0.6,
                                 capsize=0, zorder=6)
-                ax.scatter(x, d_upd, s=95, marker="^", color="#16a085",
-                           edgecolors="#0e6655", linewidths=0.7, zorder=7,
+                ax.scatter(x, d_upd, s=80, marker="^", color=C_UPD,
+                           edgecolors=C_UPD_EDGE, linewidths=0.7, zorder=7,
                            label=L("upd", "updated GP (after DFT included, ±1.96σ)"))
-                # 更新值三角自己的 #id 标签(青色), annotate 放标记上方+20pt,
-                # 与 DFT 菱形红色 #id(下方-20pt)上下分开, 不互相遮挡
+                # 更新值三角自己的 #id 标签(蓝绿色), annotate 放标记上方+20pt,
+                # 与 DFT 菱形砖红色 #id(下方-20pt)上下分开, 不互相遮挡
                 ax.annotate(f"#{cid}", (x, d_upd), textcoords="offset points",
-                            xytext=(0, 20), fontsize=6.5, color="#0e6655",
-                            ha="center", va="bottom", fontweight="bold",
+                            xytext=(0, 20), fontsize=6.5, color=C_UPD_EDGE,
+                            ha="center", va="bottom", fontweight="normal",
                             zorder=10, annotation_clip=False)
                 # GP 星 -> 更新值 竖直连线加粗, 明确两者属于同一晶体,
                 # 避免三角/菱形被误读成相邻 top-5 点的标记
-                ax.plot([x, x], [dgp, d_upd], color="#16a085", lw=1.4,
-                        alpha=0.75, zorder=4)
+                ax.plot([x, x], [dgp, d_upd], color=C_UPD, lw=1.6,
+                        alpha=0.80, zorder=4)
 
     # ============ DFT: 与同一晶体的 GP 预测值纵向对齐 + 连线 ============
     for gen in gens:
         dft_g = {cid: v for cid, v in per_gen[gen]["dft"].items() if cid in pred}
         top_ei_ids = {t[0] for t in per_gen[gen]["top_n"]} | \
                      {t[1] for t in per_gen[gen]["ei_topk"]}
-        # EI 且已 DFT 的晶体: 更新值已用三角画过, 这里不再画红菱形
+        # EI 且已 DFT 的晶体: 更新值已用三角画过, 这里不再画砖红菱形
         ei_dft_ids = {t[1] for t in per_gen[gen]["ei_topk"] if t[1] in dft_g}
         # 不在 top-5/EI 中的 DFT 晶体: 在代右侧等距排开, 补画其 GP 小星
         # EI 非 top-5 已占 gen+0.40 起(间距0.14), extra DFT 从 gen+0.62 起避开
@@ -363,56 +396,57 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
             x = x_by_id[(gen, cid)]
             dgp = pred[cid][1]
             if cid not in top_ei_ids:
-                ax.scatter(x, dgp, s=40, marker="*", color="#e67e22",
-                           edgecolors="#7e5109", linewidths=0.5,
+                ax.scatter(x, dgp, s=34, marker="*", color=C_GP,
+                           edgecolors=C_GP_EDGE, linewidths=0.5,
                            zorder=4, alpha=0.85)
             if cid in ei_dft_ids:
                 # EI+DFT: 更新GP三角已在 EI 段画过。三角是后验均值、
                 # 与 DFT 实际值不再相等(旧语义"同值重叠"不成立),
-                # 这里补画红菱形=DFT 实际值 + 虚线对比
-                ax.plot([x, x], [dgp, dd], color="#7f8c8d", lw=0.9,
+                # 这里补画砖红菱形=DFT 实际值 + 虚线对比
+                ax.plot([x, x], [dgp, dd], color=C_LINK, lw=1.0,
                         linestyle="--", alpha=0.7, zorder=4)
                 # zorder 高于三角(7)。三角与菱形同一 y 必然重叠: 菱形画成
                 # 空心描边在外圈, 让实心三角在中间透出, 两者都可见。
                 # (此前实心菱形盖住三角/实心三角盖住菱形, 总有一个看不见)
-                ax.scatter(x, dd, s=200, marker="D", facecolors="none",
-                           edgecolors="#c0392b", linewidths=1.6, zorder=9,
+                ax.scatter(x, dd, s=160, marker="D", facecolors="none",
+                           edgecolors=C_DFT, linewidths=1.4, zorder=9,
                            label=L("dft", "DFT verification"))
-                # DFT 菱形红色 #id 放标记下方-20pt, 与三角青色 #id(上方+20)
+                # DFT 菱形砖红 #id 放标记下方-20pt, 与三角蓝绿 #id(上方+20)
                 # 上下分开足够远, 不会被菱形图形或连线遮挡
                 ax.annotate(f"#{cid}", (x, dd), textcoords="offset points",
-                            xytext=(0, -20), fontsize=7, color="#922b21",
-                            ha="center", va="top", fontweight="bold",
+                            xytext=(0, -20), fontsize=7, color=C_DFT_LABEL,
+                            ha="center", va="top", fontweight="normal",
                             zorder=10, annotation_clip=False)
                 continue
             # GP 预测 → DFT 实际 对比竖线
-            ax.plot([x, x], [dgp, dd], color="#7f8c8d", lw=0.9,
+            ax.plot([x, x], [dgp, dd], color=C_LINK, lw=1.0,
                     linestyle="--", alpha=0.7, zorder=4)
-            ax.scatter(x, dd, s=130, marker="D", color="#c0392b",
-                       edgecolors="#641e16", linewidths=1.0, zorder=6,
+            ax.scatter(x, dd, s=110, marker="D", color=C_DFT,
+                       edgecolors=C_DFT_EDGE, linewidths=0.8, zorder=6,
                        label=L("dft", "DFT verification"))
             ax.annotate(f"#{cid}", (x, dd), textcoords="offset points",
-                        xytext=(0, 9), fontsize=7, color="#922b21",
-                        ha="center", fontweight="bold", zorder=8)
+                        xytext=(0, 9), fontsize=7, color=C_DFT_LABEL,
+                        ha="center", fontweight="normal", zorder=8)
 
     ax.set_xlabel("Generation")
     ax.set_ylabel(r"Density (g/cm$^3$)")
     #ax.set_title("GP top-5 high-density + EI-selected (updated) + DFT",
     #             fontsize=13, fontweight="bold")
-    ax.grid(True, alpha=0.25, linestyle="--")
+    ax.grid(True, alpha=0.25, linestyle="--", linewidth=0.5)
     handles, labels = ax.get_legend_handles_labels()
     by_lab = {}
     for h, lb in zip(handles, labels):
         if lb and lb not in by_lab:
             by_lab[lb] = h
     ax.legend(by_lab.values(), by_lab.keys(), loc="lower right",
-              fontsize=9, framealpha=0.95, ncol=1)
+              frameon=False, ncol=1, handlelength=1.4, handletextpad=0.5,
+              labelspacing=0.4, borderaxespad=0.3)
     ax.set_xticks(gens)
     # 右侧: top-5(±0.30) + EI非top5(0.40起) + extra DFT(0.62起, 间距0.14)
     ax.set_xlim(min(gens) - 0.5, max(gens) + 1.2)
 
     fig.tight_layout()
-    fig.savefig(out_png, dpi=150, bbox_inches="tight")
+    fig.savefig(out_png, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved {out_png}")
 
