@@ -259,6 +259,13 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
 
     # ============ GP 预测 (top-5 + EI 更新) ============
     x_by_id = {}        # (gen, cid) -> x 位置, DFT 点对齐用
+    labeled = set()      # 已挂图例的系列 key, 首次真正画出时才加 label
+
+    def L(key, text):
+        if key in labeled:
+            return ""
+        labeled.add(key)
+        return text
     for gi, gen in enumerate(gens):
         top_n = per_gen[gen]["top_n"]
         ei_topk = per_gen[gen]["ei_topk"]
@@ -273,7 +280,7 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                         elinewidth=1.0, alpha=0.55, capsize=0, zorder=3)
             ax.scatter(x, dgp, s=72, marker="*", color="#e67e22",
                        edgecolors="#7e5109", linewidths=0.6, zorder=4,
-                       label="GP top-5 (pred ±1.96σ)" if gen == gens[0] else "")
+                       label=L("top5", "GP top-5 (pred ±1.96σ)"))
             dy = 11 if gi % 2 == 0 else -15
             ax.annotate(f"#{cid}", (x, dgp), textcoords="offset points",
                         xytext=(0, dy), fontsize=6.5, color="#8a6d1a",
@@ -308,7 +315,7 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                             ha="center", fontweight="bold", zorder=8)
             ax.scatter(x, dgp, s=300, facecolors="none", edgecolors="#27ae60",
                        linewidths=1.8, zorder=5,
-                       label="EI-selected" if gen == gens[0] else "")
+                       label=L("ei", "EI-selected"))
             # 更新高斯值: DFT 完成后该点纳入训练集, 无观测噪声 GP
             # 在训练点处后验均值 = 观测值 (DFT 密度)
             if cid in dft:
@@ -325,8 +332,7 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                                 capsize=0, zorder=6)
                 ax.scatter(x, d_upd, s=95, marker="^", color="#16a085",
                            edgecolors="#0e6655", linewidths=0.7, zorder=7,
-                           label="updated GP (after DFT included, ±1.96σ)"
-                           if gen == gens[0] else "")
+                           label=L("upd", "updated GP (after DFT included, ±1.96σ)"))
                 # 更新值三角自己的 #id 标签(青色), annotate 放标记上方+20pt,
                 # 与 DFT 菱形红色 #id(下方-20pt)上下分开, 不互相遮挡
                 ax.annotate(f"#{cid}", (x, d_upd), textcoords="offset points",
@@ -370,7 +376,8 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                 # 空心描边在外圈, 让实心三角在中间透出, 两者都可见。
                 # (此前实心菱形盖住三角/实心三角盖住菱形, 总有一个看不见)
                 ax.scatter(x, dd, s=200, marker="D", facecolors="none",
-                           edgecolors="#c0392b", linewidths=1.6, zorder=9)
+                           edgecolors="#c0392b", linewidths=1.6, zorder=9,
+                           label=L("dft", "DFT density"))
                 # DFT 菱形红色 #id 放标记下方-20pt, 与三角青色 #id(上方+20)
                 # 上下分开足够远, 不会被菱形图形或连线遮挡
                 ax.annotate(f"#{cid}", (x, dd), textcoords="offset points",
@@ -383,7 +390,7 @@ def plot_pergen(per_gen, gen_ids, pred, dft, id2ml, out_png, k=2, top=5):
                     linestyle="--", alpha=0.7, zorder=4)
             ax.scatter(x, dd, s=130, marker="D", color="#c0392b",
                        edgecolors="#641e16", linewidths=1.0, zorder=6,
-                       label="DFT density" if gen == gens[0] else "")
+                       label=L("dft", "DFT density"))
             ax.annotate(f"#{cid}", (x, dd), textcoords="offset points",
                         xytext=(0, 9), fontsize=7, color="#922b21",
                         ha="center", fontweight="bold", zorder=8)
