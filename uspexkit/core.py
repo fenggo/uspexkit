@@ -127,9 +127,15 @@ def get_hbond_feature(atoms,n=1,elements='H core C core O core'):
 
 def get_nmol(atoms):
     '''返回晶胞内分子数，检测方式与 fixbroken 一致 (相同 rcut)。'''
-    m_ = Molecules(atoms, rcut={"H-H": 1.0, "H-O": 1.02, "O-O": 1.4,
+    if not exists("molecule.pkl"):
+       m_ = Molecules(atoms, rcut={"H-H": 1.0, "H-O": 1.02, "O-O": 1.4,
                                 "H-N": 1.22, "H-C": 1.35, "others": 1.75},
                    check=True)
+       with open("molecule.pkl", "wb") as f:
+            pickle.dump(m_, f)
+    else:
+       with open("molecule.pkl", "rb") as f:
+            m_ = pickle.load(f)
     return len(m_)
 
 
