@@ -530,7 +530,9 @@ def denevo(k=2, top=5, last=None, gen_range=None, out=None, gp_csv=None):
     all_rows = [r for r in all_rows if r[0] in gen_list]
 
     if not gen_ids:
-        raise RuntimeError("指定范围内没有任何代")
+       # raise RuntimeError("指定范围内没有任何代")
+       print("指定范围内没有任何代")
+       return None
 
     total = sum(len(v) for v in gen_ids.values())
     have = sum(1 for cid in pred if any(cid in ids for ids in gen_ids.values()))
