@@ -151,6 +151,7 @@ def main():
     p_supercell.add_argument("--x", type=int, default=1, help="X")
     p_supercell.add_argument("--y", type=int, default=1, help="Y")
     p_supercell.add_argument("--z", type=int, default=1, help="Z")
+    p_supercell.add_argument("--i", type=int, default=None, help="index of the trajectory")
     p_supercell.add_argument("--t", type=str,default=None, help="trajector file name")
     p_supercell.add_argument("--g", type=str,default=None, help="geometry file name")
 
@@ -302,7 +303,7 @@ def main():
     elif args.command == "addall":
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,ncpu=args.n,f=args.f)
     elif args.command == "supercell":
-        cmd_func(traj=args.t,gen=args.g,x=args.x,y=args.y,z=args.z)
+        cmd_func(traj=args.t,gen=args.g,x=args.x,y=args.y,z=args.z,i=args.i)
     elif args.command == "update":
         cmd_func(traj=args.t,tolerance=args.tolerance,step=args.s,inde=args.i,ncpu=args.n)
     elif args.command == "info":
