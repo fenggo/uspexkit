@@ -83,15 +83,35 @@ def add(atoms_dft=None,traj='structures.traj',step=1000,tolerance=0.005,i=-1,ncp
 
     volume   = atoms.get_volume()
     density_ = masses/volume/0.602214129
-    
+
+    # Initialize database files if they don't exist yet (fresh data directory)
+    if not exists('feature_mlp.csv'):
+        with open('feature_mlp.csv','w') as fd:
+            print(', etot, ebond, eang, etor, evdw, ehb_cho,ehb_chn,ehb_chc, ecoul, density',file=fd)
+    if not exists('feature.csv'):
+        with open('feature.csv','w') as fd:
+            print(', etot, ebond, eang, etor, evdw, ehb_cho, ehb_chn,ehb_chc, ecoul, density',file=fd)
+    if not exists('structures_mlp.traj'):
+        TrajectoryWriter('structures_mlp.traj',mode='w').close()
+    if not exists('structures.traj'):
+        TrajectoryWriter('structures.traj',mode='w').close()
+
     data = np.loadtxt('feature_mlp.csv',delimiter=',',skiprows=1)      ## get crystal feature data
     data_= np.loadtxt('feature.csv',delimiter=',',skiprows=1)          ## get crystal feature data
-    d    = data[:,1:]         # 去掉索引
-    i    = int(data[-1][0])+1   # 获取索引
     # print(cry)
     sc    = get_nmol(atoms) if f==2 else 1.0
     feature = np.array([e[0]/sc,e[1]/sc,e[5]/sc,e[8]/sc,e[10]/sc,
                         e_cho[11]/sc,e_chn[11]/sc,e_chc[11]/sc,e[12]/sc,density_])
+    if data.ndim == 1:           # 表头后 0 或 1 行数据时 loadtxt 返回一维数组
+        if data.size == 0:
+            d = data.reshape(0, len(feature))   # 空数据库
+            i = 0
+        else:
+            d = data[1:].reshape(1, -1)         # 仅一行数据
+            i = int(data[0]) + 1
+    else:
+        d = data[:,1:]           # 去掉索引
+        i = int(data[-1][0])+1   # 获取索引
     res  = np.sum(np.square(d - feature),axis=1)
     ind  = np.where(res<tolerance)
     
