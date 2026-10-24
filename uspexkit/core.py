@@ -357,6 +357,27 @@ def gp(tolerance=0.005,step=1000,n=1,b=1.5,u=0.04,f=1,dat='data',dft=0,den=1.82,
        energy = feature[0]
     write_output(e=energy)
     write_geometry(atoms=atoms)
+
+    # Return exactly what was appended to gp.csv, so in-process callers do not
+    # have to re-parse the file (column order identical to the csv row).
+    return {
+        'id': id_,
+        'nearest': int(imin),
+        'residual': float(res[imin]),
+        'density_min': float(data_[imin][-1]),
+        'density_rf': float(density_rf[0]),
+        'density_gp': float(mean_prediction[0]),
+        'uncertainty': float(1.96*std_prediction[0]),
+        'energy_min': float(data_[imin][1]),
+        'energy_pred': float(mean_eng_pred[0]),
+        'uncertainty_eng': float(1.96*std_eng_pred[0]),
+        'density_updated': density_updated,
+        'uncertainty_updated': uncert_updated,
+        'dft': bool(dft_done),
+        'density': float(density_),     # density actually used for the fitness
+        'energy': float(energy),        # value written to `output`
+        'optype': optype,
+    }
     
 
 def calcdata(traj='structures.traj',n=8,c='nn',step=1000,f=1):
