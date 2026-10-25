@@ -672,6 +672,9 @@ def pred(t="Individuals.traj", g=None, gen=None, f=1, den=1.88, ids=None,x=-1,
             print("# Crystal_id Residual Density_mlp Density_rf Density_gp std_den Energy std_eng", file=fd)
 
     masses = np.sum(images[0].get_masses())
+    # Collected per crystal and returned, so callers (gpevo) can store the
+    # predictions on the structure instead of re-parsing density_predict.log.
+    results = {}
     for s in ids_list:
         dir_list = root_dir.split("/")
         rootdir = "/".join(dir_list[:-1])
@@ -756,6 +759,25 @@ def pred(t="Individuals.traj", g=None, gen=None, f=1, den=1.88, ids=None,x=-1,
                    f"{density_rf:7.4f} "
                    f"{density_pred:7.4f} {std_den_pred:7.4f} "
                    f"{energy_pred:7.4f} {std_eng_pred:7.4f} " ,file=fd)
+
+        try:
+            residual = float(res_)
+        except (TypeError, ValueError):
+            residual = float("nan")
+        results[int(s)] = {
+            'id': int(s),
+            'residual': residual,
+            'density_mlp': float(density),
+            'density_rf': float(density_rf),
+            'density_gp': float(density_pred),
+            'std_den': float(std_den_pred),
+            'uncertainty': float(1.96 * std_den_pred),
+            'energy_pred': float(energy_pred),
+            'std_eng': float(std_eng_pred),
+            'uncertainty_eng': float(1.96 * std_eng_pred),
+        }
+
+    return results
 
 # ──────────────────────────────────────────────
 #  calc — DFT 高通量计算
